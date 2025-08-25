@@ -1,0 +1,316 @@
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FaMicrophone,
+  FaStop,
+  FaCopy,
+  FaTrash,
+  FaCheckCircle,
+  FaPaperPlane,
+} from "react-icons/fa";
+
+// ====== HELPERS ======
+const ELECTRICITY_WORDS = ["line", "bijuli", "बिजुली", "batti", "बत्ती", "current"];
+const toElectricity = (text) => {
+  if (!text) return "";
+  const pattern = new RegExp(`\\b(${ELECTRICITY_WORDS.join("|")})\\b`, "gi");
+  return text.replace(pattern, "electricity");
+};
+const useDebounce = (fn, delay = 350) => {
+  const timer = useRef(null);
+  return (...args) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => fn(...args), delay);
+  };
+};
+
+// ====== FAKE TRANSLATION ======
+async function translateText({ text, targetLang = "en" }) {
+  if (!text?.trim()) return "";
+  if (targetLang === "en") {
+    let translated = text
+      .replace(/नेपाल/gi, "Nepal")
+      .replace(/बिजुली/gi, "electricity")
+      .replace(/बत्ती/gi, "electricity");
+    return translated;
+  } else {
+    return text + " (Nepali)";
+  }
+}
+
+// ====== APP COMPONENT ======
+const App = () => {
+  const [recording, setRecording] = useState(false);
+  const [status, setStatus] = useState("Idle");
+  const [npText, setNpText] = useState("");
+  const [enText, setEnText] = useState("");
+  const [loadingTranslate, setLoadingTranslate] = useState(false);
+  const [location, setLocation] = useState(null); // NEW: store coordinates
+
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recognitionRef = useRef(null);
+
+  const debouncedNpToEn = useDebounce(async (txt) => {
+    setLoadingTranslate(true);
+    const english = await translateText({ text: toElectricity(txt), targetLang: "en" });
+    setEnText(english);
+    setLoadingTranslate(false);
+  }, 250);
+
+  const debouncedEnToNp = useDebounce(async (txt) => {
+    setLoadingTranslate(true);
+    const nepali = await translateText({ text: toElectricity(txt), targetLang: "ne" });
+    setNpText(nepali);
+    setLoadingTranslate(false);
+  }, 250);
+
+  // ====== RECORDING ======
+  const startRecording = async () => {
+    setStatus("Listening…");
+    setRecording(true);
+    audioChunksRef.current = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
+    mediaRecorder.onstop = async () => {
+      setStatus("Processing audio…");
+      setStatus("Idle");
+    };
+    mediaRecorder.start();
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    if (SR) {
+      const rec = new SR();
+      recognitionRef.current = rec;
+      rec.lang = "ne-NP";
+      rec.interimResults = true;
+      rec.continuous = true;
+      let finalChunk = "";
+      rec.onresult = (event) => {
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const r = event.results[i];
+          if (r.isFinal) finalChunk += r[0].transcript + " ";
+          else interimTranscript += r[0].transcript + " ";
+        }
+        const combinedText = (finalChunk + interimTranscript).trim();
+        setNpText(combinedText);
+        if (combinedText) debouncedNpToEn(combinedText);
+      };
+      rec.onerror = (e) => console.warn(e.error);
+      rec.onend = () => {
+        if (recording) rec.start();
+      };
+      rec.start();
+    }
+  };
+
+  const stopRecording = () => {
+    setRecording(false);
+    setStatus("Stopping…");
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch { }
+    }
+    if (mediaRecorderRef.current) {
+      try {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+      } catch { }
+    }
+  };
+
+  // ====== EDIT HANDLERS ======
+  const onNepaliInput = (e) => {
+    const txt = e.target.innerText;
+    setNpText(txt);
+    debouncedNpToEn(txt);
+  };
+  const onEnglishInput = (e) => {
+    const txt = e.target.innerText;
+    setEnText(toElectricity(txt));
+    debouncedEnToNp(txt);
+  };
+  const copy = async (val) => {
+    try {
+      await navigator.clipboard.writeText(val || "");
+    } catch { }
+  };
+  const clearBoth = () => {
+    setNpText("");
+    setEnText("");
+  };
+
+  // ====== SEND TO WEBHOOK ======
+  const sendToWebhook = async () => {
+    try {
+      // Get live location first
+      if (!navigator.geolocation) {
+        alert("Geolocation not supported in this browser.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const coords = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          };
+          setLocation(coords);
+
+          const res = await fetch(
+            "http://localhost:5678/webhook-test/d952287b-710e-4611-9049-2fa1edd0bb5f",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                nepaliText: npText,
+                englishText: enText,
+                location: coords,
+              }),
+            }
+          );
+
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          alert(
+            `Sent successfully!\nLat: ${coords.latitude}, Lon: ${coords.longitude}`
+          );
+        },
+        (err) => {
+          console.error(err);
+          alert("Failed to get location!");
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send! Check console for details.");
+    }
+  };
+
+  // ====== UI ======
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 text-slate-800">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <header className="flex flex-col items-center gap-2 mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-blue-800 text-center">
+            HamroGunaso – janata ra sarkarko bichko madhyam
+          </h1>
+          <p className="text-sm text-slate-600">
+            Real-time Nepali speech → English, bi-directional edit & electricity normalization
+          </p>
+          <div className="mt-3 flex items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${recording ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"
+                }`}
+            >
+              {recording ? "Recording" : "Ready"}
+            </span>
+            <span className="text-xs text-slate-500">• {status}</span>
+            <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded">
+              Note: Real-time speech best in Chrome
+            </span>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {!recording ? (
+            <button
+              onClick={startRecording}
+              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-blue-600 text-white shadow-lg hover:shadow-xl transition-all"
+            >
+              <span className="absolute inset-0 rounded-2xl opacity-40 blur-xl bg-blue-400 group-hover:opacity-60"></span>
+              <FaMicrophone className="text-lg" />
+              <span className="relative">Start Recording</span>
+            </button>
+          ) : (
+            <button
+              onClick={stopRecording}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-red-600 text-white shadow-lg hover:shadow-xl transition-all"
+            >
+              <FaStop className="text-lg" /> Stop
+            </button>
+          )}
+          <button
+            onClick={clearBoth}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 shadow"
+          >
+            <FaTrash /> Clear
+          </button>
+          <button
+            onClick={sendToWebhook}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-green-600 text-white shadow hover:bg-green-700"
+          >
+            <FaPaperPlane /> Send
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <div className="relative bg-white/80 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-blue-700">🎙 Nepali (Live)</h2>
+              {loadingTranslate ? (
+                <span className="text-xs text-slate-500">Translating…</span>
+              ) : (
+                <span className="text-xs text-emerald-600 inline-flex items-center gap-1">
+                  <FaCheckCircle /> Synced
+                </span>
+              )}
+            </div>
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={onNepaliInput}
+              className="min-h-56 max-h-72 overflow-y-auto p-3 rounded-xl border outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              {npText || "Nepali speech / text will appear here…"}
+            </div>
+            <div className="mt-3 flex gap-2 justify-end">
+              <button
+                onClick={() => copy(npText)}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 hover:bg-slate-200"
+              >
+                <FaCopy className="inline -mt-0.5" /> Copy
+              </button>
+            </div>
+          </div>
+
+          <div className="relative bg-white/80 backdrop-blur rounded-2xl border border-slate-200 shadow-sm p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-green-700">🌍 English</h2>
+              {loadingTranslate ? (
+                <span className="text-xs text-slate-500">Translating…</span>
+              ) : (
+                <span className="text-xs text-emerald-600 inline-flex items-center gap-1">
+                  <FaCheckCircle /> Synced
+                </span>
+              )}
+            </div>
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={onEnglishInput}
+              className="min-h-56 max-h-72 overflow-y-auto p-3 rounded-xl border outline-none focus:ring-2 focus:ring-emerald-300"
+            >
+              {enText || "English translation will appear here…"}
+            </div>
+            <div className="mt-3 flex gap-2 justify-end">
+              <button
+                onClick={() => copy(enText)}
+                className="px-3 py-1.5 text-sm rounded-lg bg-slate-100 hover:bg-slate-200"
+              >
+                <FaCopy className="inline -mt-0.5" /> Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default App;
