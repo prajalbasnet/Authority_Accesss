@@ -96,7 +96,7 @@ export const classifyComplaint = (complaint: Complaint): ClassificationResult =>
   });
 
   // Determine priority
-  let priority: 'Low' | 'Medium' | 'High' | 'Critical' = categoryRules[bestCategory]?.basePriority || 'Low';
+  let priority: 'Low' | 'Medium' | 'High' | 'Critical' = (categoryRules as any)[bestCategory]?.basePriority || 'Low';
 
   for (const keyword of priorityKeywords['Critical']) {
     if (combinedText.includes(keyword)) {

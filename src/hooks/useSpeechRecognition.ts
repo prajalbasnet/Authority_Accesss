@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 
-interface SpeechRecognitionResult {
-  transcript: string;
-  confidence: number;
-  isFinal: boolean;
-}
-
 interface UseSpeechRecognitionReturn {
   transcript: string;
   isListening: boolean;
@@ -28,43 +22,45 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
 
-    const recognition = recognitionRef.current;
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'ne-NP'; // Nepali language
+      const recognition = recognitionRef.current;
+      if (recognition) {
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'ne-NP'; // Nepali language
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = '';
-      let interimTranscript = '';
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript;
-        } else {
-          interimTranscript += result[0].transcript;
-        }
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            if (result.isFinal) {
+              finalTranscript += result[0].transcript;
+            } else {
+              interimTranscript += result[0].transcript;
+            }
+          }
+
+          setTranscript(finalTranscript + interimTranscript);
+        };
+
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
       }
 
-      setTranscript(finalTranscript + interimTranscript);
-    };
-
-    recognition.onstart = () => {
-      setIsListening(true);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-    };
-
-    return () => {
-      recognition.stop();
-    };
+      return () => {
+        if (recognitionRef.current) recognitionRef.current.stop();
+      };
   }, [browserSupportsSpeechRecognition]);
 
   const startListening = () => {
