@@ -1,11 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Mic, Users, ArrowRight, Heart, Star, Globe } from 'lucide-react';
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Mic, Users, ArrowRight, Heart, Star, Globe } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const Conclusion: React.FC = () => {
+const Conclusion = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -18,25 +18,38 @@ const Conclusion: React.FC = () => {
         trigger: sectionRef.current,
         start: "top 80%",
         end: "bottom 20%",
-        toggleActions: "play none none reverse"
-      }
+        toggleActions: "play none none reverse",
+      },
     });
 
-    tl.fromTo(titleRef.current,
+    tl.fromTo(
+      titleRef.current,
       { opacity: 0, y: 100, scale: 0.8 },
       { opacity: 1, y: 0, scale: 1, duration: 1, ease: "back.out(1.7)" }
-    )
-    .fromTo(subtitleRef.current,
+    );
+    tl.fromTo(
+      subtitleRef.current,
       { opacity: 0, y: 50 },
       { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
       "-=0.5"
-    )
-    .fromTo(ctaRef.current?.children,
-      { opacity: 0, y: 30, scale: 0.9 },
-      { opacity: 1, y: 0, scale: 1, duration: 0.6, stagger: 0.2, ease: "back.out(1.7)" },
-      "-=0.3"
-    )
-    .fromTo(footerRef.current,
+    );
+    if (ctaRef.current && ctaRef.current.children.length > 0) {
+      tl.fromTo(
+        ctaRef.current.children,
+        { opacity: 0, y: 30, scale: 0.9 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.2,
+          ease: "back.out(1.7)",
+        },
+        "-=0.3"
+      );
+    }
+    tl.fromTo(
+      footerRef.current,
       { opacity: 0, y: 30 },
       { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
       "-=0.2"
@@ -49,7 +62,7 @@ const Conclusion: React.FC = () => {
       repeat: -1,
       yoyo: true,
       ease: "power2.inOut",
-      stagger: 0.3
+      stagger: 0.3,
     });
 
     // Pulse animation for CTA buttons
@@ -58,12 +71,15 @@ const Conclusion: React.FC = () => {
       duration: 2,
       repeat: -1,
       yoyo: true,
-      ease: "power2.inOut"
+      ease: "power2.inOut",
     });
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 bg-gradient-to-br from-red-600 via-red-700 to-blue-900 text-white relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="py-20 bg-gradient-to-br from-red-600 via-red-700 to-blue-900 text-white relative overflow-hidden"
+    >
       {/* Background Elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-20 left-20 w-32 h-32 border-2 border-white rounded-full"></div>
@@ -86,25 +102,29 @@ const Conclusion: React.FC = () => {
         <h2 ref={titleRef} className="text-5xl md:text-6xl font-bold mb-8">
           SunneAawaj
         </h2>
-        
+
         {/* Subtitle */}
         <p ref={subtitleRef} className="text-2xl md:text-3xl mb-4 font-medium">
           Bringing Inclusive Digital Governance to Nepal
         </p>
-        
+
         <p className="text-lg md:text-xl mb-12 max-w-4xl mx-auto opacity-90 leading-relaxed">
-          Empowering every Nepali citizen with voice-powered technology to ensure their concerns 
-          are heard, tracked, and resolved with complete transparency and accountability.
+          Empowering every Nepali citizen with voice-powered technology to
+          ensure their concerns are heard, tracked, and resolved with complete
+          transparency and accountability.
         </p>
 
         {/* CTA Buttons */}
-        <div ref={ctaRef} className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
+        <div
+          ref={ctaRef}
+          className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+        >
           <button className="cta-pulse group bg-white text-red-600 px-10 py-5 rounded-full font-bold text-xl shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-4 transform hover:-translate-y-2">
             <Mic className="w-7 h-7 group-hover:animate-pulse" />
             Get Started (Citizen)
             <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
           </button>
-          
+
           <button className="group bg-transparent border-3 border-white text-white hover:bg-white hover:text-red-600 px-10 py-5 rounded-full font-bold text-xl shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-4 transform hover:-translate-y-2">
             <Users className="w-7 h-7" />
             Join as Authority
@@ -117,26 +137,33 @@ const Conclusion: React.FC = () => {
           <div className="bg-white bg-opacity-10 p-6 rounded-xl backdrop-blur-sm border border-white border-opacity-20">
             <Mic className="w-12 h-12 mx-auto mb-4" />
             <h3 className="text-lg font-bold mb-2">Voice-First</h3>
-            <p className="text-sm opacity-90">Nepali speech recognition for all citizens</p>
+            <p className="text-sm opacity-90">
+              Nepali speech recognition for all citizens
+            </p>
           </div>
-          
+
           <div className="bg-white bg-opacity-10 p-6 rounded-xl backdrop-blur-sm border border-white border-opacity-20">
             <Globe className="w-12 h-12 mx-auto mb-4" />
             <h3 className="text-lg font-bold mb-2">Smart Routing</h3>
-            <p className="text-sm opacity-90">AI-powered location-based authority mapping</p>
+            <p className="text-sm opacity-90">
+              AI-powered location-based authority mapping
+            </p>
           </div>
-          
+
           <div className="bg-white bg-opacity-10 p-6 rounded-xl backdrop-blur-sm border border-white border-opacity-20">
             <Heart className="w-12 h-12 mx-auto mb-4" />
             <h3 className="text-lg font-bold mb-2">Transparent</h3>
-            <p className="text-sm opacity-90">Complete tracking and accountability</p>
+            <p className="text-sm opacity-90">
+              Complete tracking and accountability
+            </p>
           </div>
         </div>
 
         {/* Final Message */}
         <div className="max-w-4xl mx-auto mb-12">
           <blockquote className="text-xl md:text-2xl font-medium italic opacity-90 mb-6">
-            "Your voice matters. Your concerns deserve action. Your rights deserve protection."
+            "Your voice matters. Your concerns deserve action. Your rights
+            deserve protection."
           </blockquote>
           <div className="w-32 h-1 bg-white mx-auto rounded-full opacity-60"></div>
         </div>
@@ -150,7 +177,9 @@ const Conclusion: React.FC = () => {
               <div className="w-6 h-4 bg-red-600 border border-white"></div>
               <div className="w-4 h-4 bg-blue-900 border border-white"></div>
             </div>
-            <span className="text-white font-semibold">Made with ❤️ for Nepal</span>
+            <span className="text-white font-semibold">
+              Made with ❤️ for Nepal
+            </span>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-blue-900 border border-white"></div>
               <div className="w-6 h-4 bg-red-600 border border-white"></div>

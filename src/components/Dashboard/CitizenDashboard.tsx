@@ -1,100 +1,126 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-
-interface Complaint {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: "Pending" | "In Progress" | "Resolved";
-}
+import { db } from "../../config/firebase";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  orderBy,
+  Timestamp
+} from "firebase/firestore";
+import { Complaint } from "../../types";
 
 const CitizenDashboard: React.FC = () => {
+  const { currentUser } = useAuth();
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
   const [chatComplaintId, setChatComplaintId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
-  const { currentUser } = useAuth();
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
 
-  useEffect(() => {
-    // Fetch chat messages for selected complaint
-    useEffect(() => {
-      if (chatComplaintId) {
-        import("../../config/firebase").then(({ db }) => {
-          import("firebase/firestore").then(
-            ({ collection, query, orderBy, onSnapshot }) => {
-              const q = query(
-                collection(db, "complaints", chatComplaintId, "messages"),
-                orderBy("createdAt", "asc")
-              );
-              const unsub = onSnapshot(q, (snapshot) => {
-                const msgs: any[] = [];
-                snapshot.forEach((doc) => msgs.push(doc.data()));
-                setChatMessages(msgs);
-              });
-              return () => unsub();
-            }
-          );
-        });
-      }
-    }, [chatComplaintId]);
-    // Send chat message
-    const handleSendMessage = async () => {
-      if (!chatComplaintId || !chatInput.trim()) return;
-      import("../../config/firebase").then(({ db }) => {
-        import("firebase/firestore").then(
-          ({ collection, addDoc, serverTimestamp }) => {
-            addDoc(collection(db, "complaints", chatComplaintId, "messages"), {
-              sender: currentUser?.displayName || "User",
-              senderId: currentUser?.uid || "",
-              text: chatInput,
-              createdAt: serverTimestamp(),
-            });
-            setChatInput("");
-          }
-        );
-      });
-    };
+  const fetchComplaints = useCallback(async () => {
     if (!currentUser) return;
-    import("../../config/firebase").then(({ db }) => {
-      import("firebase/firestore").then(
-        ({ collection, query, where, getDocs }) => {
-          const q = query(
-            collection(db, "complaints"),
-            where("userId", "==", currentUser.uid)
-          );
-          getDocs(q).then((snapshot) => {
-            const data: Complaint[] = [];
-            snapshot.forEach((doc) => {
-              const d = doc.data();
-              data.push({
-                id: doc.id,
-                title: d.title,
-                description: d.description,
-                category: d.category,
-                status: d.status || "Pending",
-              });
-            });
-            setComplaints(data);
-          });
-        }
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, "complaints"),
+        where("userId", "==", currentUser.uid)
       );
-    });
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map((doc) => {
+        const complaintData = doc.data();
+        return {
+          id: doc.id,
+          title: complaintData.title || "",
+          description: complaintData.description || "",
+          category: complaintData.category || "",
+          location: complaintData.location?.address || "",
+          status: complaintData.status || "Pending",
+          priority: complaintData.priority || "Normal",
+          createdAt: complaintData.createdAt || Timestamp.now(),
+          userId: complaintData.userId || "",
+          authorityId: complaintData.authorityId || "",
+        } as Complaint;
+      });
+      setComplaints(data);
+    } catch (error) {
+      console.error("Error fetching complaints:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [currentUser]);
 
-  const handleMarkAsSolved = (id: string) => {
-    setComplaints(
-      complaints.map((c) => (c.id === id ? { ...c, status: "Resolved" } : c))
+  useEffect(() => {
+    fetchComplaints();
+  }, [fetchComplaints]);
+
+  // Effect for chat messages
+  useEffect(() => {
+    if (!chatComplaintId) return;
+
+    const q = query(
+      collection(db, "complaints", chatComplaintId, "messages"),
+      orderBy("createdAt", "asc")
     );
-    import("../../config/firebase").then(({ db }) => {
-      import("firebase/firestore").then(({ doc, updateDoc }) => {
-        const complaintRef = doc(db, "complaints", id);
-        updateDoc(complaintRef, { status: "Resolved" });
-      });
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => doc.data());
+      setChatMessages(msgs);
     });
+
+    return () => unsubscribe();
+  }, [chatComplaintId]);
+
+  const handleMarkAsSolved = async (id: string) => {
+    try {
+      const complaintRef = doc(db, "complaints", id);
+      await updateDoc(complaintRef, { status: "Resolved" });
+      setComplaints((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "Resolved" } : c))
+      );
+    } catch (error) {
+      console.error("Error marking as solved:", error);
+    }
   };
+
+  const handleSendMessage = async () => {
+    if (!chatComplaintId || !chatInput.trim() || !currentUser) return;
+
+    try {
+      await addDoc(collection(db, "complaints", chatComplaintId, "messages"), {
+        sender: currentUser.displayName || "User",
+        senderId: currentUser.uid,
+        text: chatInput,
+        createdAt: serverTimestamp(),
+      });
+      setChatInput("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+  
+  const openChat = (complaintId: string) => {
+    setChatComplaintId(complaintId);
+    setChatOpen(true);
+  };
+
+  const closeChat = () => {
+    setChatComplaintId(null);
+    setChatOpen(false);
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center">Loading your complaints...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -126,10 +152,7 @@ const CitizenDashboard: React.FC = () => {
                   </button>
                 )}
                 <button
-                  onClick={() => {
-                    setChatOpen(true);
-                    setChatComplaintId(complaint.id);
-                  }}
+                  onClick={() => openChat(complaint.id)}
                   className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
                 >
                   Chat
@@ -139,8 +162,9 @@ const CitizenDashboard: React.FC = () => {
           </div>
         ))}
       </div>
+
       {/* Chat Modal */}
-      {chatOpen && chatComplaintId && (
+      {chatOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-2">Complaint Chat</h3>
@@ -152,9 +176,7 @@ const CitizenDashboard: React.FC = () => {
                   <div
                     key={idx}
                     className={`mb-2 ${
-                      msg.senderId === currentUser?.uid
-                        ? "text-right"
-                        : "text-left"
+                      msg.senderId === currentUser?.uid ? "text-right" : "text-left"
                     }`}
                   >
                     <span className="font-semibold text-blue-700">
@@ -181,10 +203,7 @@ const CitizenDashboard: React.FC = () => {
               </button>
             </div>
             <button
-              onClick={() => {
-                setChatOpen(false);
-                setChatComplaintId(null);
-              }}
+              onClick={closeChat}
               className="mt-4 bg-gray-200 px-4 py-1 rounded"
             >
               Close

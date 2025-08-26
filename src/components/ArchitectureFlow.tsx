@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowRight, User, Mic, FileText, Bot, Database, Users, Bell, CheckCircle } from 'lucide-react';
+import { User, Mic, FileText, Bot, Database, Users, Bell, CheckCircle } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,22 +25,24 @@ const ArchitectureFlow: React.FC = () => {
     const arrows = flowRef.current?.querySelectorAll('.flow-arrow');
 
     // Animate steps
-    gsap.fromTo(steps,
-      { opacity: 0, scale: 0, rotationY: 180 },
-      {
-        opacity: 1,
-        scale: 1,
-        rotationY: 0,
-        duration: 0.6,
-        stagger: 0.3,
-        ease: "back.out(1.7)",
-        scrollTrigger: {
-          trigger: flowRef.current,
-          start: "top 80%",
-          toggleActions: "play none none reverse"
+    if (steps) {
+      gsap.fromTo(steps,
+        { opacity: 0, scale: 0, rotationY: 180 },
+        {
+          opacity: 1,
+          scale: 1,
+          rotationY: 0,
+          duration: 0.6,
+          stagger: 0.3,
+          ease: "back.out(1.7)",
+          scrollTrigger: {
+            trigger: flowRef.current,
+            start: "top 80%",
+            toggleActions: "play none none reverse"
+          }
         }
-      }
-    );
+      );
+    }
 
     // Animate arrows with stroke effect
     arrows?.forEach((arrow, index) => {

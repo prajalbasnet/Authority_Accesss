@@ -11,26 +11,17 @@ import {
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, googleProvider, facebookProvider, db } from '../config/firebase';
 
+import { UserProfile } from '../types';
+
 interface AuthContextType {
   currentUser: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, userType: 'citizen' | 'authority') => Promise<void>;
+  signup: (email: string, password: string, name: string, userType: UserProfile['userType']) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
-}
-
-interface UserProfile {
-  uid: string;
-  name: string;
-  email: string;
-  userType: 'citizen' | 'authority';
-  location?: string;
-  phone?: string;
-  verified: boolean;
-  createdAt: Date;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
