@@ -24,11 +24,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = "login",
   userType = "citizen",
 }) => {
-  const isAdmin = false; // Set to true if you want to enable admin login logic
-  // Only citizen and authority are valid userType, so admin logic should be handled elsewhere or by a prop.
-  const [mode, setMode] = useState<"login" | "signup">(
-    isAdmin ? "login" : initialMode
-  );
+  const isAdmin = false;
+  const [mode, setMode] = useState<"initial" | "login" | "signup">("initial");
+  const [selectedType, setSelectedType] = useState<
+    "citizen" | "authority" | null
+  >(null);
   const [formData, setFormData] = useState({
     email: isAdmin ? "admin" : "",
     password: isAdmin ? "admin" : "",
@@ -51,7 +51,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       if (mode === "login") {
         await login(formData.email, formData.password);
@@ -61,12 +60,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           files,
         };
         console.log(signupData);
-        // await signup(
-        //   formData.email,
-        //   formData.password,
-        //   formData.name,
-        //   userType
-        // );
+        // await signup(...)
       }
       onClose();
     } catch (error: any) {
@@ -107,12 +101,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="p-6">
-          {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-red-600">
-              {mode === "login" ? "Welcome Back" : "Join SunneAawaj"}
+              {mode === "login"
+                ? "Welcome Back"
+                : mode === "signup"
+                ? selectedType === "citizen"
+                  ? "Citizen Signup"
+                  : "Authority Signup"
+                : "Sign Up"}
             </h2>
             <button
               onClick={onClose}
@@ -122,31 +121,53 @@ const AuthModal: React.FC<AuthModalProps> = ({
             </button>
           </div>
 
-          {/* User Type Badge */}
-          <div className="mb-6">
-            <span
-              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                userType === "citizen"
-                  ? "bg-red-100 text-red-800"
-                  : "bg-blue-100 text-blue-800"
-              }`}
-            >
-              {userType === "citizen"
-                ? "👤 Citizen Account"
-                : "🏛️ Authority Account"}
-            </span>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
-              {error}
+          {mode === "initial" && (
+            <div className="flex flex-col gap-4 items-center">
+              <button
+                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                onClick={() => {
+                  setMode("signup");
+                  setSelectedType("citizen");
+                }}
+              >
+                Sign Up
+              </button>
+              <button
+                className="w-full bg-gray-100 text-red-600 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                onClick={() => setMode("login")}
+              >
+                Already have an account? Login
+              </button>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Only allow signup for non-admin users */}
-            {mode === "signup" && !isAdmin && (
-              <>
+          {mode === "signup" && (
+            <>
+              <div className="flex justify-center items-center mb-6">
+                <div className="relative flex w-full max-w-xs bg-gray-200 rounded-full p-1">
+                  <button
+                    className={`w-1/2 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
+                      selectedType === "citizen"
+                        ? "bg-red-600 text-white shadow-md"
+                        : "text-gray-600"
+                    }`}
+                    onClick={() => setSelectedType("citizen")}
+                  >
+                    Citizen
+                  </button>
+                  <button
+                    className={`w-1/2 py-2 text-sm font-semibold rounded-full transition-all duration-300 ${
+                      selectedType === "authority"
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "text-gray-600"
+                    }`}
+                    onClick={() => setSelectedType("authority")}
+                  >
+                    Authority
+                  </button>
+                </div>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name
@@ -199,8 +220,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     />
                   </div>
                 </div>
-
-                {userType === "citizen" && (
+                {selectedType === "citizen" && (
                   <>
                     {renderFileUpload(
                       "citizenshipFront",
@@ -216,8 +236,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     )}
                   </>
                 )}
-
-                {userType === "authority" && (
+                {selectedType === "authority" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -232,7 +251,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                             authorityField: e.target.value,
                           })
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">Select field</option>
                         <option value="Electricity">Electricity</option>
@@ -246,80 +265,195 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     {renderFileUpload("officeIdCard", "Office ID Card")}
                   </>
                 )}
-              </>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={
-                    isAdmin
-                      ? undefined
-                      : (e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder={isAdmin ? "admin" : "Enter your email"}
-                  disabled={isAdmin}
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={
+                        isAdmin
+                          ? undefined
+                          : (e) =>
+                              setFormData({
+                                ...formData,
+                                email: e.target.value,
+                              })
+                      }
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder={isAdmin ? "admin" : "Enter your email"}
+                      disabled={isAdmin}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={
+                        isAdmin
+                          ? undefined
+                          : (e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                      }
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder={isAdmin ? "admin" : "Enter your password"}
+                      disabled={isAdmin}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? "Please wait..." : "Create Account"}
+                </button>
+              </form>
+              <div className="mt-6 text-center flex flex-col gap-2">
+                <button
+                  onClick={loginWithGoogle}
+                  className="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                >
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png"
+                    alt="Google"
+                    className="w-5 h-5"
+                  />{" "}
+                  Sign in with Google
+                </button>
+                <button
+                  onClick={loginWithFacebook}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
+                >
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg"
+                    alt="Facebook"
+                    className="w-5 h-5"
+                  />{" "}
+                  Sign in with Facebook
+                </button>
+                <button
+                  onClick={() => {
+                    setMode("login");
+                    setSelectedType(null);
+                  }}
+                  className="text-red-600 hover:text-red-700 font-medium mt-2"
+                >
+                  Already have an account? Login
+                </button>
               </div>
-            </div>
+            </>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={
-                    isAdmin
-                      ? undefined
-                      : (e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder={isAdmin ? "admin" : "Enter your password"}
-                  disabled={isAdmin}
-                />
+          {mode === "login" && (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={
+                        isAdmin
+                          ? undefined
+                          : (e) =>
+                              setFormData({
+                                ...formData,
+                                email: e.target.value,
+                              })
+                      }
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder={isAdmin ? "admin" : "Enter your email"}
+                      disabled={isAdmin}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="password"
+                      required
+                      value={formData.password}
+                      onChange={
+                        isAdmin
+                          ? undefined
+                          : (e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                      }
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      placeholder={isAdmin ? "admin" : "Enter your password"}
+                      disabled={isAdmin}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? "Please wait..." : "Sign In"}
+                </button>
+              </form>
+              <div className="mt-6 text-center flex flex-col gap-2">
+                <button
+                  onClick={loginWithGoogle}
+                  className="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                >
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_2013_Google.png"
+                    alt="Google"
+                    className="w-5 h-5"
+                  />{" "}
+                  Sign in with Google
+                </button>
+                <button
+                  onClick={loginWithFacebook}
+                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 flex items-center justify-center gap-2"
+                >
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg"
+                    alt="Facebook"
+                    className="w-5 h-5"
+                  />{" "}
+                  Sign in with Facebook
+                </button>
+                <button
+                  onClick={() => {
+                    setMode("signup");
+                    setSelectedType(null);
+                  }}
+                  className="text-red-600 hover:text-red-700 font-medium mt-2"
+                >
+                  Don't have an account? Sign up
+                </button>
               </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
-              {loading
-                ? "Please wait..."
-                : mode === "login"
-                ? "Sign In"
-                : "Create Account"}
-            </button>
-          </form>
-
-          {/* Hide signup toggle for admin */}
-          {!isAdmin && (
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-red-600 hover:text-red-700 font-medium"
-              >
-                {mode === "login"
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </button>
-            </div>
+            </>
           )}
         </div>
       </div>
