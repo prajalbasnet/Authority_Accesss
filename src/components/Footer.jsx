@@ -1,93 +1,101 @@
 import React from "react";
-import { FaFacebookF, FaTwitter, FaInstagram } from "react-icons/fa";
+import Logo from "../assets/HamroGunaso.png";
+import { FaFacebook, FaTwitter, FaInstagram, FaEnvelope } from "react-icons/fa";
 
-export default function Footer() {
-    return (
-        <footer className="bg-blue-700 text-white">
-            {/* Top Section */}
-            <div className="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-5 gap-8">
+const Footer = () => {
+  return (
+    <footer className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white py-10 px-6 mt-10 shadow-lg">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+        {/* Logo + About */}
+        <div>
+          <img src={Logo} alt="HamroGunaso Logo" className="h-24 mb-0" />
+          <p className="text-sm leading-relaxed opacity-90">
+            HamroGunaso is Nepal's pioneering e-governance platform designed to
+            bridge the gap between citizens and authorities with transparency
+            and ease.
+          </p>
+        </div>
 
-                {/* Logo & Description */}
-                <div>
-                    <h2 className="text-2xl font-bold mb-3 text-white underline decoration-blue-500 decoration-2">
-                        HamroGunaso
-                    </h2>
-                    <p className="text-gray-300 leading-relaxed mt-2">
-                        HamroGunasO helps you submit complaints to relevant authorities
-                        easily, transparently, and effectively.
-                    </p>
+        {/* Quick Links */}
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Quick Links</h2>
+          <ul className="space-y-2 text-sm opacity-90">
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                Home
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                About Us
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                How It Works
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                Contact
+              </a>
+            </li>
+          </ul>
+        </div>
 
-                    {/* Tagline */}
-                    <div className="mt-6 text-gray-300 text-sm italic flex items-center gap-2">
-                        <span className="text-lg">🇳🇵</span>
-                        <span className="border-l border-gray-400 pl-2">
-                            नेपाल सरकारको आधिकारिक गुनासो समाधान
-                        </span>
-                    </div>
-                </div>
+        {/* Resources */}
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Resources</h2>
+          <ul className="space-y-2 text-sm opacity-90">
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                FAQs
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                Privacy Policy
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                Terms & Conditions
+              </a>
+            </li>
+            <li>
+              <a href="#" className="hover:text-gray-300">
+                Support
+              </a>
+            </li>
+          </ul>
+        </div>
 
+        {/* Contact + Social */}
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Get in Touch</h2>
+          <p className="text-sm opacity-90 flex items-center gap-2">
+            <FaEnvelope /> support@hamroGunaso.com
+          </p>
+          <div className="flex gap-4 mt-4">
+            <a href="#" className="hover:text-gray-300 text-xl">
+              <FaFacebook />
+            </a>
+            <a href="#" className="hover:text-gray-300 text-xl">
+              <FaTwitter />
+            </a>
+            <a href="#" className="hover:text-gray-300 text-xl">
+              <FaInstagram />
+            </a>
+          </div>
+        </div>
+      </div>
 
-                {/* Quick Links */}
-                <div>
-                    <h3 className="text-xl font-semibold mb-4 text-white">Quick Links</h3>
-                    <ul className="space-y-2">
-                        <li><a href="/" className="hover:text-red-400 transition">Home</a></li>
-                        <li><a href="/about" className="hover:text-red-400 transition">About</a></li>
-                        <li><a href="/terms" className="hover:text-red-400 transition">Terms & Policy</a></li>
-                        <li><a href="/authorities" className="hover:text-red-400 transition">Authorities</a></li>
-                        <li><a href="/contact" className="hover:text-red-400 transition">Contact</a></li>
-                    </ul>
-                </div>
+      {/* Bottom Section */}
+      <div className="border-t border-gray-600 mt-8 pt-4 text-center text-sm opacity-90">
+        © {new Date().getFullYear()} HamroGunaso. All Rights Reserved.
+      </div>
+    </footer>
+  );
+};
 
-                {/* Services */}
-                <div>
-                    <h3 className="text-xl font-semibold mb-4 text-white">Services</h3>
-                    <ul className="space-y-2 text-gray-300">
-                        <li>Complaint Filing</li>
-                        <li>Status Tracking</li>
-                        <li>Authority Connect</li>
-                        <li>Public Updates</li>
-                    </ul>
-                </div>
-
-                {/* Authorities List */}
-                <div>
-                    <h3 className="text-xl font-semibold mb-4 text-white">Authorities</h3>
-                    <ul className="space-y-2 text-gray-300">
-                        <li>Nepal Electricity Authority</li>
-                        <li>Department of Roads</li>
-                        <li>Nepal Police</li>
-                        <li>Fire Department</li>
-                        <li>Water Supply & Sanitation</li>
-                        <li>Public Transport Authority</li>
-                        <li>Ministry of Health</li>
-                        <li>Environment & Forestry</li>
-                    </ul>
-                </div>
-
-                {/* Contact & Social */}
-                <div>
-                    <h3 className="text-xl font-semibold mb-4 text-white">Contact</h3>
-                    <p className="text-gray-300">📧 support@hamrogunaso.com</p>
-                    <p className="text-gray-300">📞 +977 9800000000</p>
-                    <div className="flex gap-5 mt-5">
-                        <a href="#" className="hover:text-blue-400 transition">
-                            <FaFacebookF size={20} />
-                        </a>
-                        <a href="#" className="hover:text-sky-400 transition">
-                            <FaTwitter size={20} />
-                        </a>
-                        <a href="#" className="hover:text-pink-400 transition">
-                            <FaInstagram size={20} />
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Bar */}
-            <div className="border-t border-gray-700 py-5 text-center text-gray-400 text-sm">
-                © {new Date().getFullYear()} HamroGunasO. All rights reserved.
-            </div>
-        </footer>
-    );
-}
+export default Footer;
