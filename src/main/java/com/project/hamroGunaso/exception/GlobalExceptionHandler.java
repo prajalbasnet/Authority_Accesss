@@ -52,5 +52,12 @@ public class GlobalExceptionHandler {
         ApiResponse<String> response = new ApiResponse<String>(false, "Internal server error", null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+    @ExceptionHandler(NumberFormatException.class)
+    public ResponseEntity<ApiResponse<String>> handleNumberFormat(NumberFormatException ex) {
+        logger.warn("Invalid number format: {}", ex.getMessage());
+        ApiResponse<String> response = new ApiResponse<>(false, "Invalid input format", null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
 }
 

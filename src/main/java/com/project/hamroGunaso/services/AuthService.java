@@ -1,12 +1,14 @@
 package com.project.hamroGunaso.services;
 
 import com.project.hamroGunaso.ENUM.EmailStatus;
+import com.project.hamroGunaso.ENUM.IdentityStatus;
 import com.project.hamroGunaso.ENUM.OtpPurpose;
 import com.project.hamroGunaso.ENUM.Role;
 import com.project.hamroGunaso.config.JwtUtil;
 import com.project.hamroGunaso.entities.User;
 import com.project.hamroGunaso.exception.BadRequestException;
 import com.project.hamroGunaso.exception.ResourceNotFoundException;
+import com.project.hamroGunaso.repository.AuthorityProfileRepository;
 import com.project.hamroGunaso.repository.UserRepository;
 import com.project.hamroGunaso.requestDTO.*;
 import com.project.hamroGunaso.responseDTO.ApiResponse;
@@ -14,6 +16,8 @@ import com.project.hamroGunaso.responseDTO.LoginResponseDTO;
 import com.project.hamroGunaso.responseDTO.UserResponseDTO;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +48,8 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
-                .EmailStatus(EmailStatus.PENDING)
+                .emailStatus(EmailStatus.PENDING)
+                .identityStatus(IdentityStatus.PENDING)
                 .build();
 
         userRepository.save(user);
@@ -60,33 +65,66 @@ public class AuthService {
     /**
      * Login user
      */
+ 
     @Transactional(readOnly = true)
-    public ApiResponse<LoginResponseDTO> login(LoginRequestDTO request) {
+    public ApiResponse<LoginResponseDTO> login(LoginRequestDTO request){
+        try {
+            // 1. Fetch user by email
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new BadRequestException("Email not registered"));
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            // 2. Validate password
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                return new ApiResponse<>(false, "Invalid crenditails", null);
+            }
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadRequestException("Invalid credentials");
+            // 3. Validate role
+            Role role = user.getRole();
+            switch (role) {
+                case USER -> {
+                    if (user.getEmailStatus() != EmailStatus.VERIFIED) {
+                        return new ApiResponse<>(false, "Email is not verified", null);
+                    }
+                }
+                case AUTHORITY -> {
+                    if (user.getEmailStatus() != EmailStatus.VERIFIED) {
+                        return new ApiResponse<>(false, "Email is not verified", null);
+                    }
+                    if (user.getIdentityStatus() != IdentityStatus.VERIFIED) {
+                        return new ApiResponse<>(false, "Authority identity is not approved", null);
+                    }
+                }
+                case ADMIN -> {} // No restriction
+                default -> {
+                    return new ApiResponse<>(false, "Unknown role assigned", null);
+                }
+            }
+
+            // 4. Generate JWT token
+            String token = jwtUtil.generateToken(user.getId(), role);
+
+            // 5. Map to DTO
+            UserResponseDTO userResponse = UserResponseDTO.builder()
+                    .id(user.getId())
+                    .fullName(user.getFullName())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .build();
+
+            LoginResponseDTO loginResponse = LoginResponseDTO.builder()
+                    .user(userResponse)
+                    .token(token)
+                    .build();
+
+            return new ApiResponse<>(true, "Login successful", loginResponse);
+
+        } catch (BadRequestException ex) {
+            // Email not registered
+            return new ApiResponse<>(false, ex.getMessage(), null);
+        } catch (Exception ex) {
+            // Unexpected errors
+            return new ApiResponse<>(false, "Internal server error", null);
         }
-
-        // Email verification check
-        if (user.getEmailStatus() != EmailStatus.VERIFIED) {
-            throw new BadRequestException("Please verify your email before logging in");
-        }
-
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
-
-        LoginResponseDTO loginResponse = LoginResponseDTO.builder()
-                .token(token)
-                .user(UserResponseDTO.builder()
-                        .id(user.getId())
-                        .fullName(user.getFullName())
-                        .email(user.getEmail())
-                        .role(user.getRole())
-                        .build())
-                .build();
-
-        return new ApiResponse<>(true, "Login successful", loginResponse);
     }
-}
+
+    }

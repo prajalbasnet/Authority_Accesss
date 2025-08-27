@@ -40,7 +40,7 @@ public class Complaint {
 
     @ManyToOne
     @JoinColumn(name = "authority_id")
-    private Authority authority;
+    private AuthorityProfile authority;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

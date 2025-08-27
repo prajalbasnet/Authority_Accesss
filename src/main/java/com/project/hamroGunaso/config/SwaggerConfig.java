@@ -15,7 +15,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("SkillShare API").version("1.0.0").description("API docs for SkillShare"))
+                .info(new Info().title("HamroGunaso API").version("1.0.0").description("API docs for SkillShare"))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
                 .components(new Components().addSecuritySchemes("Bearer Authentication",
                     new SecurityScheme().type(SecurityScheme.Type.HTTP)

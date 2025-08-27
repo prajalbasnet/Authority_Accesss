@@ -2,6 +2,8 @@ package com.project.hamroGunaso.entities;
 
 import com.project.hamroGunaso.ENUM.Role;
 import com.project.hamroGunaso.ENUM.EmailStatus;
+import com.project.hamroGunaso.ENUM.IdentityStatus;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -40,7 +42,13 @@ public class User {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EmailStatus EmailStatus;
+    private EmailStatus emailStatus = EmailStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private IdentityStatus identityStatus = IdentityStatus.PENDING;
+
+
 
     @Column(updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

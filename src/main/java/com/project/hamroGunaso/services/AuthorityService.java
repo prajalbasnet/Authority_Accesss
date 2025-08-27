@@ -1,55 +1,73 @@
 package com.project.hamroGunaso.services;
 
 
-import com.project.hamroGunaso.ENUM.Role;
-import com.project.hamroGunaso.entities.Authority;
-import com.project.hamroGunaso.exception.BadRequestException;
-import com.project.hamroGunaso.repository.AuthorityRepository;
-import com.project.hamroGunaso.requestDTO.AuthorityRegisterRequestDto;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.project.hamroGunaso.ENUM.EmailStatus;
+import com.project.hamroGunaso.ENUM.IdentityStatus;
+import com.project.hamroGunaso.ENUM.Role;
+import com.project.hamroGunaso.entities.AuthorityProfile;
+import com.project.hamroGunaso.entities.User;
+import com.project.hamroGunaso.exception.BadRequestException;
+import com.project.hamroGunaso.repository.AuthorityProfileRepository;
+import com.project.hamroGunaso.repository.UserRepository;
+import com.project.hamroGunaso.requestDTO.AuthorityRegisterRequestDto;
+import com.project.hamroGunaso.responseDTO.ApiResponse;
 
 @Service
 @RequiredArgsConstructor
 public class AuthorityService {
 
-    private final AuthorityRepository authorityRepository;
+    private final AuthorityProfileRepository authorityRepository;
+    private final UserRepository userRepo;
     private final BCryptPasswordEncoder passwordEncoder;
     private final FileService fileService;
 
     // Authority registration
-    public Authority registerAuthority(AuthorityRegisterRequestDto dto) {
-        if (authorityRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new BadRequestException("Authority with this email already exists");
+    @Transactional
+    public ApiResponse<Map<String, String>> registerAuthority(AuthorityRegisterRequestDto dto) {
+       
+    	if (userRepo.findByEmail(dto.getEmail()).isPresent()) {
+            throw new BadRequestException("Email already exists");
         }
 
-        // ✅ only allow images for photos & IDs
-        String profilePhoto = fileService.saveImageFile(dto.getProfilePhoto(), "profile");
-        String citizenshipFront = fileService.saveImageFile(dto.getCitizenshipFrontImage(), "citizenship");
-        String citizenshipBack = fileService.saveImageFile(dto.getCitizenshipBackImage(), "citizenship");
-        String idCard = fileService.saveImageFile(dto.getAuthorityIdentityCardImage(), "idcard");
-
-        Authority authority = Authority.builder()
+        // Create user record
+        User user = User.builder()
                 .fullName(dto.getFullName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .authorityType(dto.getAuthorityType())
-                .citizenshipNumber(dto.getCitizenshipNumber())
-                .photo(profilePhoto)
-                .citizenshipFrontImage(citizenshipFront)
-                .citizenshipBackImage(citizenshipBack)
-                .authorityIdentityCardImage(idCard)
                 .role(Role.AUTHORITY)
                 .build();
 
-        return authorityRepository.save(authority);
+        userRepo.save(user);
+
+        // Save authority profile
+        AuthorityProfile profile = AuthorityProfile.builder()
+                .user(user)
+                .authorityType(dto.getAuthorityType())
+                .citizenshipNumber(dto.getCitizenshipNumber())
+                .photo(fileService.saveImageFile(dto.getProfilePhoto(), "profile"))
+                .citizenshipFrontImage(fileService.saveImageFile(dto.getCitizenshipFrontImage(), "citizenship"))
+                .citizenshipBackImage(fileService.saveImageFile(dto.getCitizenshipBackImage(), "citizenship"))
+                .authorityIdentityCardImage(fileService.saveImageFile(dto.getAuthorityIdentityCardImage(), "idcard"))
+                .build();
+
+        authorityRepository.save(profile);
+
+        return new ApiResponse<>(true, "Authority registered successfully. Please verify your email.",
+                Map.of("email", user.getEmail()));
     }
 
+
     // Optional: Authority fetch own profile
-    public Authority getAuthorityById(Long id) {
+    public AuthorityProfile getAuthorityById(Long id) {
         return authorityRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Authority not found"));
     }

@@ -1,38 +1,68 @@
 package com.project.hamroGunaso.services;
 
-import com.project.hamroGunaso.entities.Authority;
+import com.project.hamroGunaso.ENUM.IdentityStatus;
+import com.project.hamroGunaso.entities.AuthorityProfile;
+import com.project.hamroGunaso.entities.UserKYC;
 import com.project.hamroGunaso.exception.BadRequestException;
-import com.project.hamroGunaso.repository.AuthorityRepository;
+import com.project.hamroGunaso.repository.AuthorityProfileRepository;
+import com.project.hamroGunaso.repository.UserKYCRepository;
+import com.project.hamroGunaso.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 public class AdminService {
 
-    private final AuthorityRepository authorityRepository;
+    private final UserRepository userRepository;
+    private final UserKYCRepository userKYCRepository;
+    private final AuthorityProfileRepository authorityRepository;
 
-    // Fetch all authorities waiting for identity verification
-    public List<Authority> getPendingAuthorities() {
-        return authorityRepository.findByIdentityVerifiedFalse();
+    // ---------------- User KYC ----------------
+    public List<UserKYC> getPendingUsersKYC() {
+        return userKYCRepository.findByStatus(IdentityStatus.PENDING);
     }
 
-    // Approve authority
+    public void approveUserKYC(Long kycId) {
+        UserKYC userKYC = userKYCRepository.findById(kycId)
+                .orElseThrow(() -> new BadRequestException("User KYC not found"));
+        userKYC.getUser().setIdentityStatus(IdentityStatus.VERIFIED);
+        userKYCRepository.save(userKYC); // cascade updates user
+        // Optional: send notification
+    }
+
+    public void rejectUserKYC(Long kycId, String reason) {
+        UserKYC userKYC = userKYCRepository.findById(kycId)
+                .orElseThrow(() -> new BadRequestException("User KYC not found"));
+        userKYC.getUser().setIdentityStatus(IdentityStatus.REJECTED);
+        userKYCRepository.save(userKYC);
+        // Optional: send notification with reason
+    }
+
+    // ---------------- Authority ----------------
+    public List<AuthorityProfile> getPendingAuthorities() {
+        return authorityRepository.findByUser_IdentityStatus(IdentityStatus.PENDING);
+    }
+
     public void approveAuthority(Long id) {
-        Authority authority = authorityRepository.findById(id)
+        AuthorityProfile authorityProfile = authorityRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Authority not found"));
-        authority.setIdentityVerified(true);
-        authorityRepository.save(authority);
+        authorityProfile.getUser().setIdentityStatus(IdentityStatus.VERIFIED);
+        authorityRepository.save(authorityProfile);
+        // Optional: send notification
     }
 
-    // Reject authority (optional)
     public void rejectAuthority(Long id, String reason) {
-        Authority authority = authorityRepository.findById(id)
+        AuthorityProfile authorityProfile = authorityRepository.findById(id)
                 .orElseThrow(() -> new BadRequestException("Authority not found"));
-        authority.setActive(false);
-        authorityRepository.save(authority);
-        // Optional: send notification to authority with reason
+        authorityProfile.getUser().setIdentityStatus(IdentityStatus.REJECTED);
+        authorityRepository.save(authorityProfile);
+        // Optional: send notification with reason
     }
 }
+
+
