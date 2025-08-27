@@ -14,7 +14,7 @@ const ChatAssistant = () => {
     let idleTimer = null;
 
     const webhookUrl =
-        "http://localhost:5678/webhook-test/9a2e8d22-f066-46b0-810e-b85b54b45b60";
+        "http://localhost:5678/webhook/9a2e8d22-f066-46b0-810e-b85b54b45b60";
 
     // Auto scroll when messages change
     useEffect(() => {

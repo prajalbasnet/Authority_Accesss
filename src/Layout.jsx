@@ -2,7 +2,8 @@
 import React from "react";
 import Navbar from "./components/Nav";
 import Footer from "./components/Footer";
-import ChatAssistant from "./components/ChatAssistant"; // add this import
+import ChatAssistant from "./components/ChatAssistant";
+
 
 const Layout = ({ children }) => {
     return (
