@@ -62,9 +62,24 @@ const CitizenPage = () => {
   // New state for audio recording
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
-  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(() => {
+    const saved = sessionStorage.getItem('complaint-form-audioBlob');
+    if (saved) {
+      // Convert base64 string back to Blob
+      const byteString = atob(saved.split(',')[1]);
+      const mimeString = saved.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      return new Blob([ab], { type: mimeString });
+    }
+    return null;
+  });
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const audioRef = useRef(null); // For audio playback
+  const mediaStreamRef = useRef(null); // To hold the media stream
 
   // Save form data to sessionStorage on state changes
   useEffect(() => {
@@ -97,6 +112,19 @@ const CitizenPage = () => {
   }, [priority]);
 
   useEffect(() => {
+    if (audioBlob) {
+      // Convert Blob to base64 string for sessionStorage
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = () => {
+        sessionStorage.setItem('complaint-form-audioBlob', reader.result);
+      };
+    } else {
+      sessionStorage.removeItem('complaint-form-audioBlob');
+    }
+  }, [audioBlob]);
+
+  useEffect(() => {
     const handleStorageChange = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       const newStatus = (user && user.status) ? user.status.toUpperCase() : "UNVERIFIED";
@@ -115,43 +143,83 @@ const CitizenPage = () => {
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream; // Store the stream reference
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
       setAudioChunks([]);
       setAudioBlob(null);
 
       recorder.ondataavailable = (event) => {
-        setAudioChunks((prev) => [...prev, event.data]);
+        if (event.data.size > 0) {
+          setAudioChunks((prev) => [...prev, event.data]);
+          console.log("Audio data available, size:", event.data.size); // Log data chunks
+        }
       };
 
       recorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' }); // Using webm for broader compatibility
-        setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+        console.log("MediaRecorder stopped. Audio chunks:", audioChunks.length); // Log onstop
+        if (audioChunks.length > 0) {
+          const blob = new Blob(audioChunks, { type: 'audio/webm' });
+          setAudioBlob(blob);
+          console.log("Audio Blob created:", blob.size, blob.type); // Log blob creation
+        } else {
+          console.warn("No audio data collected.");
+          toast.warn("No audio recorded. Please ensure your microphone is working.");
+        }
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(track => track.stop()); // Stop microphone access
+          mediaStreamRef.current = null;
+        }
+        setMediaRecorder(null); // Clear recorder reference
+      };
+
+      recorder.onerror = (event) => { // Add onerror handler
+        console.error("MediaRecorder error:", event.error);
+        toast.error(`Audio recording error: ${event.error.name}`);
+        setIsRecordingAudio(false);
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(track => track.stop());
+          mediaStreamRef.current = null;
+        }
+        setMediaRecorder(null);
       };
 
       recorder.start();
       setIsRecordingAudio(true);
+      console.log("MediaRecorder state after start:", recorder.state); // Log recorder state
       toast.info("Audio recording started...");
     } catch (error) {
       console.error("Error starting audio recording:", error);
       toast.error("Failed to start audio recording. Please check microphone permissions.");
+      setIsRecordingAudio(false); // Ensure recording state is reset on error
     }
   };
 
   const stopAudioRecording = () => {
     if (mediaRecorder && mediaRecorder.state === "recording") {
+      console.log("Stopping MediaRecorder. Current state:", mediaRecorder.state); // Log before stop
       mediaRecorder.stop();
-      setIsRecordingAudio(false);
+      // setIsRecordingAudio(false); // This will be set in onstop
       toast.success("Audio recording stopped.");
+    } else {
+      console.warn("Attempted to stop recording when not active or in recording state.");
     }
   };
 
   const resetAudioRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") { // Ensure recorder is stopped before resetting
+      mediaRecorder.stop();
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setMediaRecorder(null);
     setAudioChunks([]);
     setAudioBlob(null);
     setIsRecordingAudio(false);
     toast.info("Audio recording reset.");
+    console.log("Audio recording reset.");
   };
 
   const handleVoiceResult = (transcript) => {
@@ -195,9 +263,11 @@ const CitizenPage = () => {
     formData.append("text", voiceMessage); // Mapping voiceMessage (Nepali text) to text
 
     if (audioBlob) {
+      console.log("Audio Blob available, size:", audioBlob.size, "type:", audioBlob.type); // Added log
       formData.append("voiceClip", audioBlob, "voice_clip.webm"); // Appending the recorded audio blob
     } else {
       toast.error("Please record a voice clip.");
+      console.error("Audio Blob is null, cannot submit voice clip."); // Added log
       return;
     }
 
@@ -326,7 +396,42 @@ const CitizenPage = () => {
                     {/* Voice Recording Section */}
                     <div className="flex flex-col items-center space-y-4 bg-blue-50 border border-blue-200 p-2 rounded-lg shadow-md">
                       <p className="text-lg font-semibold text-red-600">
-                        Click the microphone to speak your complaint:
+                        Record your voice complaint and get a transcript:
+                      </p>
+                      <div className="flex space-x-4">
+                        <button
+                          onClick={startAudioRecording}
+                          disabled={isRecordingAudio}
+                          className={`p-4 rounded-full shadow-lg transition-all duration-300 ${isRecordingAudio ? 'bg-red-500 animate-pulse' : 'bg-blue-600 hover:bg-blue-700'} text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${isRecordingAudio ? 'focus:ring-red-500' : 'focus:ring-blue-500'}`}
+                          title="Start Audio Recording"
+                        >
+                          <FaMicrophoneAlt size={24} />
+                        </button>
+                        <button
+                          onClick={stopAudioRecording}
+                          disabled={!isRecordingAudio}
+                          className="p-4 rounded-full bg-gray-600 text-white shadow-lg hover:bg-gray-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                          title="Stop Audio Recording"
+                        >
+                          <FaStop size={24} />
+                        </button>
+                        <button
+                          onClick={resetAudioRecording}
+                          disabled={isRecordingAudio || !audioBlob}
+                          className="p-4 rounded-full bg-yellow-500 text-white shadow-lg hover:bg-yellow-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                          title="Reset Audio Recording"
+                        >
+                          <FaRedo size={24} />
+                        </button>
+                      </div>
+                      {isRecordingAudio && <p className="text-sm text-red-600 font-semibold">Recording audio...</p>}
+                      {audioBlob && (
+                        <div className="mt-2">
+                          <audio ref={audioRef} src={URL.createObjectURL(audioBlob)} controls className="w-full"></audio>
+                        </div>
+                      )}
+                      <p className="text-lg font-semibold text-red-600 mt-4">
+                        (Optional) Use speech-to-text for a written transcript:
                       </p>
                       <Dictaphone onResult={handleVoiceResult} />
                       {voiceMessage && (
