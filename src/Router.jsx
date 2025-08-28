@@ -8,14 +8,16 @@ import Authorities from "./LandingPage/Authorities";
 import HowToUse from "./LandingPage/HowToUse";
 import TermsAndPolicy from "./LandingPage/TermsAndPolicy";
 import ContactUs from "./LandingPage/ContactUs";
-import UserLayout from "./UserLayout";
-import UserHome from "./UserDashboard/Home";
 import Signup from "./Signup";
 import Otp from "./Otp";
 import AuthorityVerificationMessage from "./AuthorityVerificationMessage";
 import Login from "./Login";
 import CitizenPage from "./CitizenPage";
 import KycVerification from "./KycVerification";
+import CitizenDashboardLayout from "./CitizenDashboardLayout";
+import CitizenDashboardHome from "./CitizenDashboard/Home";
+import MyComplaints from "./CitizenDashboard/MyComplaints";
+import PublicComplaintFeed from "./CitizenDashboard/PublicComplaintFeed";
 
 const Router = createBrowserRouter([
     {
@@ -31,38 +33,30 @@ const Router = createBrowserRouter([
             </Layout>
         ),
     },
-    { path: "/about", element: <Layout><About /></Layout> },
-    { path: "/authorities", element: <Layout><Authorities /></Layout> },
-    { path: "/how-to-use", element: <Layout><HowToUse /></Layout> },
-    { path: "/terms-policy", element: <Layout><TermsAndPolicy /></Layout> },
-    { path: "/contact", element: <Layout><ContactUs /></Layout> },
+    
     { path: "/signup", element: <Signup /> },
     { path: "/otp", element: <Otp /> },
     { path: "/login", element: <Login /> },
     { path: "/authority-verification-message", element: <AuthorityVerificationMessage /> },
 
-    // Citizen Dashboard Route
+    // Public Complaint and Broadcast Feed (accessible to all)
+    {
+        path: "/public-feed",
+        element: <PublicComplaintFeed />,
+    },
+
+    // Citizen Dashboard Routes
     {
         path: "/citizen",
-        element: <CitizenPage />,
+        element: <CitizenDashboardLayout />,
+        children: [
+            { index: true, element: <CitizenDashboardHome /> }, // Default route for /citizen
+            { path: "file-complaint", element: <CitizenPage /> }, // Complaint form
+            { path: "kyc", element: <KycVerification /> },
+            { path: "my-complaints", element: <MyComplaints /> },
+            { path: "complaint-feed", element: <PublicComplaintFeed /> },
+        ],
     },
-    // KYC Verification Route
-    {
-        path: "/citizen/kyc",
-        element: <KycVerification />,
-    },
-
-    // User Dashboard Route (existing)
-    {
-        path: "/dashboard",
-        element: (
-            <UserLayout>
-                <UserHome />
-            </UserLayout>
-        ),
-    },
-
-
 ]);
 
 export default Router;

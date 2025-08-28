@@ -4,173 +4,157 @@ import {
   FaTint,
   FaRoad,
   FaShieldAlt,
-  FaHospital,
   FaFire,
-  FaSeedling,
-  FaBus,
+  FaShieldHalved, // New import for Cyber Bureau
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
 const authorities = [
   {
-    name: "Nepal Electricity Authority",
+    name: "Electricity Authority",
     icon: <FaBolt size={40} className="text-yellow-500" />,
-    description: "Handles electricity supply complaints",
+    description: "Manages electricity supply and related complaints.",
     responseTime: "2-4 hours",
     location: "Nationwide",
     phone: "1660-01-60005",
-    email: "electricity@nea.org.np",
-    total: 156,
-    resolved: 142,
+    email: "info@electricity.gov.np",
+    total: 1560,
+    resolved: 1420,
   },
   {
-    name: "Water Supply Management Board",
-    icon: <FaTint size={40} className="text-blue-400" />,
-    description: "Water supply and sanitation issues",
-    responseTime: "4-8 hours",
-    location: "Kathmandu Valley",
-    phone: "01-4211594",
-    email: "water@wsmb.gov.np",
-    total: 89,
-    resolved: 76,
-  },
-  {
-    name: "Department of Roads",
+    name: "Road Transportation",
     icon: <FaRoad size={40} className="text-gray-700" />,
-    description: "Road maintenance and construction",
+    description: "Oversees road infrastructure and transportation services.",
     responseTime: "1-3 days",
-    location: "All highways and major roads",
+    location: "All major roads",
     phone: "01-4211682",
-    email: "roads@dor.gov.np",
-    total: 234,
-    resolved: 198,
+    email: "info@roadtransport.gov.np",
+    total: 2340,
+    resolved: 1980,
   },
   {
-    name: "Nepal Police",
+    name: "Cyber Bureau",
+    icon: <FaShieldHalved size={40} className="text-indigo-600" />,
+    description: "Handles cybercrime, digital security, and online fraud.",
+    responseTime: "Immediate to 24 hours",
+    location: "National",
+    phone: "1111",
+    email: "cyber@police.gov.np",
+    total: 890,
+    resolved: 760,
+  },
+  {
+    name: "Water Supply",
+    icon: <FaTint size={40} className="text-blue-400" />,
+    description: "Ensures clean water supply and sanitation.",
+    responseTime: "4-8 hours",
+    location: "Urban & Rural",
+    phone: "01-4211594",
+    email: "info@watersupply.gov.np",
+    total: 890,
+    resolved: 760,
+  },
+  {
+    name: "Police Department",
     icon: <FaShieldAlt size={40} className="text-blue-800" />,
-    description: "Law enforcement and public safety",
+    description: "Maintains law and order, ensures public safety.",
     responseTime: "30 minutes",
     location: "Nationwide",
     phone: "100",
-    email: "police@nepalpolice.gov.np",
-    total: 45,
-    resolved: 43,
-  },
-  {
-    name: "Department of Health Services",
-    icon: <FaHospital size={40} className="text-red-500" />,
-    description: "Healthcare and medical services",
-    responseTime: "1-2 hours",
-    location: "All public hospitals",
-    phone: "01-4262802",
-    email: "health@dohs.gov.np",
-    total: 67,
-    resolved: 59,
+    email: "info@police.gov.np",
+    total: 4500,
+    resolved: 4300,
   },
   {
     name: "Fire Department",
     icon: <FaFire size={40} className="text-orange-500" />,
-    description: "Fire emergency and rescue services",
+    description: "Responds to fire emergencies and rescue operations.",
     responseTime: "15 minutes",
     location: "Major cities",
     phone: "101",
-    email: "fire@fire.gov.np",
-    total: 23,
-    resolved: 23,
-  },
-  {
-    name: "Ministry of Agriculture",
-    icon: <FaSeedling size={40} className="text-green-600" />,
-    description: "Agricultural development and support",
-    responseTime: "2-7 days",
-    location: "Rural areas",
-    phone: "01-4211932",
-    email: "agriculture@moad.gov.np",
-    total: 112,
-    resolved: 98,
-  },
-  {
-    name: "Department of Transport Management",
-    icon: <FaBus size={40} className="text-yellow-700" />,
-    description: "Public transport and traffic management",
-    responseTime: "1-2 days",
-    location: "Major routes",
-    phone: "01-4258474",
-    email: "transport@dotm.gov.np",
-    total: 78,
-    resolved: 65,
+    email: "info@fire.gov.np",
+    total: 230,
+    resolved: 230,
   },
 ];
 
 const Authorities = () => {
   return (
-    <section className="min-h-screen bg-gray-50 py-12 px-4 md:px-6 font-sans">
+    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4 md:px-8 font-sans">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-center mb-10"
+        className="text-center mb-12"
       >
-        <h2 className="text-3xl md:text-4xl font-bold text-blue-800 mb-3">
-          Available Authorities
+        <h2 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-4 leading-tight">
+          Key Government Authorities
         </h2>
-        <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-          Connect with verified government departments to resolve your issues
-          efficiently.
+        <p className="text-gray-700 text-lg md:text-xl max-w-3xl mx-auto">
+          Connect directly with the relevant authorities to address your concerns and ensure swift resolution.
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
         <AnimatePresence>
           {authorities.map((auth, idx) => {
-            const successRate = Math.round((auth.resolved / auth.total) * 100);
+            const successRate = auth.total > 0 ? Math.round((auth.resolved / auth.total) * 100) : 0;
             return (
               <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                whileHover={{ scale: 1.03 }}
-                className="bg-white p-5 rounded-xl shadow-lg border border-gray-100 flex flex-col h-full"
+                key={auth.name} // Use name as key for better stability
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                transition={{ duration: 0.6, delay: idx * 0.15, ease: "easeOut" }}
+                whileHover={{ scale: 1.02, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
+                className="bg-white p-6 rounded-2xl shadow-xl border border-blue-100 flex flex-col h-full transform transition-all duration-300 ease-in-out hover:border-red-600"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gray-100 rounded-lg">{auth.icon}</div>
-                  <h3 className="text-lg font-semibold text-gray-800">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="p-3 bg-blue-50 rounded-full flex items-center justify-center shadow-sm">
+                    {auth.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">
                     {auth.name}
                   </h3>
-                  <span className="ml-auto text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                  <span className="ml-auto text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                     Verified
                   </span>
                 </div>
-                <p className="text-gray-600 text-sm mb-3">{auth.description}</p>
-                <ul className="text-gray-700 text-xs space-y-2 mb-4">
+                <p className="text-gray-600 text-base mb-4 flex-grow">
+                  {auth.description}
+                </p>
+                <ul className="text-gray-700 text-sm space-y-2 mb-5">
                   <li className="flex items-center gap-2">
-                    <span className="text-blue-500">⏱</span> Response:{" "}
-                    {auth.responseTime}
+                    <span className="text-blue-500 text-lg">⏱</span> Response:{" "}
+                    <span className="font-medium">{auth.responseTime}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-blue-500">📍</span> {auth.location}
+                    <span className="text-blue-500 text-lg">📍</span>{" "}
+                    <span className="font-medium">{auth.location}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-blue-500">📞</span> {auth.phone}
+                    <span className="text-blue-500 text-lg">📞</span>{" "}
+                    <span className="font-medium">{auth.phone}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="text-blue-500">✉️</span> {auth.email}
+                    <span className="text-blue-500 text-lg">✉️</span>{" "}
+                    <span className="font-medium">{auth.email}</span>
                   </li>
                 </ul>
                 <div>
-                  <p className="text-sm font-medium text-gray-800 mb-2">
-                    {auth.total} Total | {auth.resolved} Resolved
+                  <p className="text-sm font-semibold text-gray-800 mb-2">
+                    <span className="text-blue-600">{auth.resolved}</span> Resolved out of{" "}
+                    <span className="text-gray-600">{auth.total}</span> Total
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
-                      className="h-2.5 rounded-full bg-green-500"
+                      className="h-2.5 rounded-full bg-gradient-to-r from-green-400 to-green-600 shadow-md"
                       style={{ width: `${successRate}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm font-medium text-gray-800 mt-2">
-                    Success Rate: {successRate}%
+                  <p className="text-sm font-semibold text-gray-800 mt-2">
+                    Success Rate:{" "}
+                    <span className="text-green-600">{successRate}%</span>
                   </p>
                 </div>
               </motion.div>

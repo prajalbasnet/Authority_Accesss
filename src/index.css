@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+html, body, #root {
+  background-color: #f0f0f0 !important; /* Light gray background */
+  color: #333333 !important; /* Dark gray text */
+  min-height: 100vh !important; /* Ensure full viewport height */
+  display: block !important; /* Ensure it's not display: none */
+  visibility: visible !important; /* Ensure it's visible */
+  opacity: 1 !important; /* Ensure it's not transparent */
+}
