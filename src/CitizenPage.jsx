@@ -166,8 +166,7 @@ const CitizenPage = () => {
     // --- API Call for Complaint Submission ---
     // This is where you would send the complaintData to your backend API.
     // Example using fetch:
-    /*
-    fetch('/api/submit-complaint', {
+    fetch('/api/dummy-submit-complaint', { // Changed URL to dummy
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -205,25 +204,6 @@ const CitizenPage = () => {
         console.error('Error submitting complaint:', error);
         toast.error(`Failed to submit complaint: ${error.message}`);
     });
-    */
-    toast.success("Complaint submitted successfully! (Simulated)");
-
-    // Clear form data from sessionStorage on successful submission
-    sessionStorage.removeItem("complaint-form-currentStep");
-    sessionStorage.removeItem("complaint-form-voiceMessage");
-    sessionStorage.removeItem("complaint-form-convertedText");
-    sessionStorage.removeItem("complaint-form-locationData");
-    sessionStorage.removeItem("complaint-form-hasProof");
-    sessionStorage.removeItem("complaint-form-proofFiles");
-    sessionStorage.removeItem("complaint-form-priority");
-
-    setCurrentStep(1);
-    setVoiceMessage("");
-    setConvertedText("");
-    setLocationData(null);
-    setHasProof(false);
-    setProofFiles([]);
-    setPriority("Medium");
   };
 
   const isFormDisabled = kycStatus !== "VERIFIED";
