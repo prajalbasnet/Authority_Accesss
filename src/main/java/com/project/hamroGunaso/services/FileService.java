@@ -24,6 +24,16 @@ public class FileService {
         validateFile(file, new String[]{"image/jpeg", "image/png", "image/jpg"});
         return save(file, folder);
     }
+ 
+    public String saveAudioFile(MultipartFile file, String folder) {
+        validateFile(file, new String[]{"audio/mpeg", "audio/wav", "audio/mp3", "audio/x-wav"});
+        return save(file, folder);
+    }
+    
+    public String saveVideoFile(MultipartFile file, String folder) {
+        validateFile(file, new String[]{"video/mp4", "video/quicktime", "video/x-msvideo"});
+        return save(file, folder);
+    }
 
     //  save PDF file (optional, for CV etc.)
     public String savePdfFile(MultipartFile file, String folder) {

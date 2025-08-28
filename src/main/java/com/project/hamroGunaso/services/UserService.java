@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -21,6 +24,7 @@ public class UserService {
     private final UserKYCRepository userKYCRepository;
     private final FileService fileService;
 
+    @Transactional
     public UserKYCDTO uploadKYC(Long userId, UserKYCRequestDTO request) {
 
         User user = userRepository.findById(userId)
@@ -39,6 +43,7 @@ public class UserService {
         }
 
         UserKYC userKYC = UserKYC.builder()
+        		.id(userId)
                 .user(user)
                 .documentType("Citizenship")
                 .documentFrontImage(frontFileName)
@@ -48,11 +53,10 @@ public class UserService {
                 .submittedAt(LocalDateTime.now())
                 .build();
 
-        try {
-            userKYCRepository.save(userKYC);
-        } catch (Exception e) {
-            throw new BadRequestException("Failed to save KYC data: " + e.getMessage());
-        }
+        userKYCRepository.save(userKYC);
+
+        // update User identityStatus; JPA dirty checking will handle save automatically
+        user.setIdentityStatus(IdentityStatus.PENDING);
 
         return mapToDTO(userKYC);
     }
@@ -71,4 +75,3 @@ public class UserService {
                 .build();
     }
 }
-

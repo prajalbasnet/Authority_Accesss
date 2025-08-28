@@ -1,5 +1,6 @@
 package com.project.hamroGunaso.responseDTO;
 
+import com.project.hamroGunaso.ENUM.IdentityStatus;
 import com.project.hamroGunaso.ENUM.Role;
 import lombok.*;
 
@@ -9,8 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class UserResponseDTO {
-    private Long id;
-    private String fullName;
-    private String email;
+	private String fullName;
     private Role role;
+    private IdentityStatus status;
 }

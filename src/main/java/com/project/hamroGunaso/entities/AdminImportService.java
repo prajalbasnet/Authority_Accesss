@@ -24,8 +24,7 @@ public class AdminImportService implements CommandLineRunner{
    public void run(String... args) {
 	  String adminEmail = "admin44@gmail.com";
 	  if(!userRepo.existsByEmail(adminEmail)) {
-		  User admin = User.builder()
-				  
+		  User admin = User.builder()  
 				    .email(adminEmail)
 				    .fullName("Admin")
 				    .password(passEnco.encode("admin123"))

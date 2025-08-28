@@ -7,8 +7,6 @@ import com.project.hamroGunaso.ENUM.Role;
 import com.project.hamroGunaso.config.JwtUtil;
 import com.project.hamroGunaso.entities.User;
 import com.project.hamroGunaso.exception.BadRequestException;
-import com.project.hamroGunaso.exception.ResourceNotFoundException;
-import com.project.hamroGunaso.repository.AuthorityProfileRepository;
 import com.project.hamroGunaso.repository.UserRepository;
 import com.project.hamroGunaso.requestDTO.*;
 import com.project.hamroGunaso.responseDTO.ApiResponse;
@@ -17,7 +15,6 @@ import com.project.hamroGunaso.responseDTO.UserResponseDTO;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +46,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .emailStatus(EmailStatus.PENDING)
-                .identityStatus(IdentityStatus.PENDING)
+                .identityStatus(IdentityStatus.UNVERIFIED)
                 .build();
 
         userRepository.save(user);
@@ -105,10 +102,10 @@ public class AuthService {
 
             // 5. Map to DTO
             UserResponseDTO userResponse = UserResponseDTO.builder()
-                    .id(user.getId())
+                  
                     .fullName(user.getFullName())
-                    .email(user.getEmail())
                     .role(user.getRole())
+                    .status(user.getIdentityStatus())
                     .build();
 
             LoginResponseDTO loginResponse = LoginResponseDTO.builder()

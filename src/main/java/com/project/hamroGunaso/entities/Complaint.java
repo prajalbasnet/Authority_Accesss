@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.project.hamroGunaso.ENUM.ComplaintCategory;
 import com.project.hamroGunaso.ENUM.ComplaintStatus;
@@ -19,11 +20,11 @@ public class Complaint {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
     private User user;
-
+    
     @Column(nullable = false, columnDefinition = "TEXT")
     private String transcribedText; // Transcribed complaint
 
@@ -35,9 +36,19 @@ public class Complaint {
 
     private Integer urgency; // 1-5 scale
 
-    private Double locationLat;
-    private Double locationLng;
+    private String voicePath;   // file path to stored voice clip
+    private String photoPath;   // if only one photo
+    
+    // OR for multiple photos
+    @ElementCollection
+    private List<String> mediaPaths;  // store multiple photo/video file paths
 
+
+    private Double latitude;
+    private Double longitude;
+    
+    private String fullAddress;
+    
     @ManyToOne
     @JoinColumn(name = "authority_id")
     private AuthorityProfile authority;
