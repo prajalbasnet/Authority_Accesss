@@ -1,6 +1,5 @@
 package com.project.hamroGunaso.services;
 
-import com.project.hamroGunaso.config.CustomOAuth2User;
 import com.project.hamroGunaso.entities.User;
 import com.project.hamroGunaso.ENUM.Role;
 import com.project.hamroGunaso.repository.UserRepository;

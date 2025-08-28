@@ -1,4 +1,4 @@
-package com.project.hamroGunaso.config;
+package com.project.hamroGunaso.services;
 
 import com.project.hamroGunaso.entities.User;
 import lombok.Getter;
