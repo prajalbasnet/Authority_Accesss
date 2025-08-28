@@ -26,7 +26,8 @@ public class Notification {
     private String message;
 
     @Column(nullable = false)
-    private boolean seen = false;
+    @Builder.Default
+    private boolean isSeen = false;
     
     private LocalDateTime createdAt;
 }

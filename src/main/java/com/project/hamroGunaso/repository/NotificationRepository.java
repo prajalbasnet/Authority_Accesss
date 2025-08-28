@@ -21,6 +21,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Modifying
     @Transactional
-    @Query("UPDATE Notification n SET n.seen = true WHERE n.id IN :ids AND n.user.id = :userId")
+    @Query("UPDATE Notification n SET n.isSeen = true WHERE n.id IN :ids AND n.user.id = :userId")
     void markAsSeen(List<Long> ids, Long userId);
 }

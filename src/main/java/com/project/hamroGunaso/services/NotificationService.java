@@ -22,7 +22,7 @@ public class NotificationService {
                 .user(user)
                 .title(title)
                 .message(message)
-                .seen(false)
+                .isSeen(false)
                 .createdAt(LocalDateTime.now())
                 .build();
 

@@ -48,8 +48,12 @@ public class User {
     @Column(nullable = false)
     private IdentityStatus identityStatus = IdentityStatus.PENDING;
 
-
-
     @Column(updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+
+    //Automatically set createdAt before insert
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

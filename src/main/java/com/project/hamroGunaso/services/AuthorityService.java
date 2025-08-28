@@ -10,8 +10,6 @@ import java.util.Map;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.project.hamroGunaso.ENUM.EmailStatus;
-import com.project.hamroGunaso.ENUM.IdentityStatus;
 import com.project.hamroGunaso.ENUM.Role;
 import com.project.hamroGunaso.entities.AuthorityProfile;
 import com.project.hamroGunaso.entities.User;

@@ -8,6 +8,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SendToUser;
@@ -23,9 +24,9 @@ public class NotificationWSController {
 
  @MessageMapping("/notifications/fetch")
  @SendToUser("/queue/notifications")
- public List<Notification> fetchNotifications(Principal principal) {
+ public Page<Notification> fetchNotifications(Principal principal) {
      Long userId = Long.parseLong(principal.getName());
-     return notificationService.getNotifications(userId);
+     return notificationService.getNotifications(userId, null);
  }
 
  @MessageMapping("/notifications/seen")
