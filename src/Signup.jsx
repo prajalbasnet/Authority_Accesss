@@ -65,7 +65,7 @@ const Signup = () => {
     try {
       if (role === "citizen") {
         const response = await axios.post(
-          "http://localhost:8080/api/auth/register",
+          "https://3b41727a9f0b.ngrok-free.app/api/auth/register",
           {
             fullName: data.fullName,
             email: data.email,
@@ -98,7 +98,7 @@ const Signup = () => {
         });
 
         const response = await axios.post(
-          "http://localhost:8080/api/auth/authority/register",
+          "https://3b41727a9f0b.ngrok-free.app/api/auth/authority/register",
           formData
         );
 

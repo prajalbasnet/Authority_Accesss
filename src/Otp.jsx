@@ -1,108 +1,158 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import OtpInput from "react-otp-input";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 
 const Otp = () => {
-  const [otp, setOtp] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
-  const { email, role } = location.state || {};
+  const navigate = useNavigate();
+  const { email, role } = location.state || {}; // role citizen/authority
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
 
-    if (!email) {
-      toast.error("Email not found. Please register again.");
-      setIsSubmitting(false);
-      return;
+  // countdown
+  useEffect(() => {
+    if (timer > 0) {
+      const countdown = setInterval(() => setTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(countdown);
+    } else {
+      setCanResend(true);
     }
+  }, [timer]);
 
+  // handle input
+  const handleChange = (e, index) => {
+    const value = e.target.value.replace(/[^0-9]/g, "").slice(0, 1);
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < otp.length - 1) {
+      document.getElementById(`otp-${index + 1}`).focus();
+    }
+  };
+
+  // verify OTP
+  const handleSubmit = async () => {
+    const fullOtp = otp.join("");
+    if (fullOtp.length === 6) {
+      try {
+        const response = await fetch(
+          `https://3b41727a9f0b.ngrok-free.app/api/otp/verify/VERIFY_EMAIL`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, otp: fullOtp }),
+          }
+        );
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          toast.success("✅ OTP Verified!");
+
+          // role अनुसार next step
+          if (role === "citizen") {
+            toast.info("Now login with your email & password.");
+            navigate("/login", { state: { showMessage: true } });
+          } else if (role === "authority") {
+            navigate("/verification-authority");
+          } else {
+            navigate("/login");
+          }
+        } else {
+          toast.error(result.message || "❌ Invalid OTP. Try again.");
+        }
+      } catch (error) {
+        console.error("OTP verification error:", error);
+        toast.error("⚠️ OTP Error. Try again later.");
+      }
+    } else {
+      toast.warning("⚠️ Please enter full 6-digit OTP.");
+    }
+  };
+
+  // resend OTP
+  const handleResend = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/otp/verify/registration",
-        { email, otp }
+      const response = await fetch(
+        `https://3b41727a9f0b.ngrok-free.app/api/otp/send/VERIFY_EMAIL`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
       );
 
-      if (response.status === 200) {
-        toast.success("Otp verified Now login with your email and password");
-        navigate("/login");
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setOtp(["", "", "", "", "", ""]);
+        toast.success("✅ OTP resent to your email!");
+        setTimer(30);
+        setCanResend(false);
+      } else {
+        toast.error(result.message || "❌ Failed to resend OTP.");
       }
     } catch (error) {
-      console.error("OTP verification error:", error);
-      if (error.response) {
-        toast.error(error.response.data?.message || "OTP verification failed.");
-      } else {
-        toast.error("Server not responding. Try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+      console.error("Resend OTP error:", error);
+      toast.error("⚠️ Server error. Try again later.");
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 bg-gray-100"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg border-2 border-gray-200"
-      >
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-          Verify Your Account
-        </h1>
-        <p className="text-center text-gray-500 mb-8">
-          An OTP has been sent to <strong>{email}</strong>.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <div className="flex justify-center mb-6">
-            <OtpInput
-              value={otp}
-              onChange={setOtp}
-              numInputs={6}
-              renderSeparator={<span className="mx-2 text-gray-400">-</span>}
-              renderInput={(props) => <input {...props} />}
-              inputStyle="w-12 h-12 text-2xl rounded-lg border-2 border-gray-300 text-center focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all duration-300"
-              containerStyle="gap-2"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-white to-gray-100 px-4">
+      <div className="w-full max-w-md bg-white p-6 rounded-xl shadow-xl border-4 border-blue-700">
+        <h2 className="text-2xl font-bold text-center text-blue-900 mb-2">
+          Email Verification
+        </h2>
+
+        {email && (
+          <p className="text-sm text-center text-gray-600 mb-4">
+            OTP has been sent to: <strong>{email}</strong>
+          </p>
+        )}
+
+        {/* OTP Inputs */}
+        <div className="flex justify-center gap-3 mb-4">
+          {otp.map((digit, index) => (
+            <input
+              key={index}
+              id={`otp-${index}`}
+              type="text"
+              value={digit}
+              onChange={(e) => handleChange(e, index)}
+              maxLength={1}
+              className="w-12 h-12 text-xl text-center border-2 border-gray-300 rounded-md focus:outline-none focus:border-red-600 transition-all"
             />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || otp.length < 6}
-            className={`w-full font-bold py-3 rounded-lg text-white transition-all duration-300 flex items-center justify-center text-base ${
-              isSubmitting || otp.length < 6
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-red-600 hover:bg-red-700 hover:shadow-lg hover:-translate-y-1"
-            }`}
-          >
-            {isSubmitting ? (
-              <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
-            ) : (
-              "Verify OTP"
-            )}
-          </button>
-        </form>
-      </motion.div>
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+          ))}
+        </div>
+
+        {/* Verify Button */}
+        <button
+          onClick={handleSubmit}
+          className="w-full bg-red-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition-all"
+        >
+          Verify OTP
+        </button>
+
+        {/* Resend Section */}
+        <div className="mt-4 text-center text-sm text-gray-700">
+          {canResend ? (
+            <button
+              onClick={handleResend}
+              className="text-red-600 underline hover:text-blue-700 transition"
+            >
+              Resend OTP
+            </button>
+          ) : (
+            <span>Resend OTP in {timer}s</span>
+          )}
+        </div>
+      </div>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

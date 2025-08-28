@@ -46,7 +46,7 @@ const LocationMarker = ({ onLocationSelect }) => {
   );
 };
 
-const MapPicker = ({ onLocationSelect, initialPosition = [27.7172, 85.3240] }) => { // Default to Kathmandu
+const MapPicker = ({ onLocationSelect, initialPosition = [27.6193, 83.4750] }) => { // Default to Tilottama
   return (
     <div className="h-96 w-full rounded-lg overflow-hidden shadow-md border border-gray-200">
       <MapContainer center={initialPosition} zoom={13} scrollWheelZoom={false} className="h-full w-full">
