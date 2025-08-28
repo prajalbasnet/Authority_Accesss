@@ -6,6 +6,9 @@ import {
   FaUpload,
   FaCheckCircle,
   FaTimesCircle,
+  FaPlay, // Added for audio playback
+  FaStop, // Added for audio stop
+  FaRedo // Added for audio reset
 } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -36,9 +39,7 @@ const CitizenPage = () => {
   });
   const [proofFiles, setProofFiles] = useState(() => {
     const saved = sessionStorage.getItem('complaint-form-proofFiles');
-    // Note: FileList cannot be directly stored/restored from JSON. 
-    // This will only restore file names, not the actual file objects.
-    // For actual file persistence, you'd need a more complex solution (e.g., IndexedDB or server upload).
+  
     return saved ? JSON.parse(saved) : [];
   });
   const [priority, setPriority] = useState(() => {
@@ -57,6 +58,13 @@ const CitizenPage = () => {
 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
+  // New state for audio recording
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const audioRef = useRef(null); // For audio playback
 
   // Save form data to sessionStorage on state changes
   useEffect(() => {
@@ -80,7 +88,7 @@ const CitizenPage = () => {
   }, [hasProof]);
 
   useEffect(() => {
-    // Store only file names for proofFiles, as actual File objects cannot be serialized
+    
     sessionStorage.setItem('complaint-form-proofFiles', JSON.stringify(proofFiles.map(file => ({ name: file.name, size: file.size, type: file.type }))));
   }, [proofFiles]);
 
@@ -103,10 +111,53 @@ const CitizenPage = () => {
     };
   }, []);
 
+  // Audio recording functions
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+      setAudioChunks([]);
+      setAudioBlob(null);
+
+      recorder.ondataavailable = (event) => {
+        setAudioChunks((prev) => [...prev, event.data]);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' }); // Using webm for broader compatibility
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+      };
+
+      recorder.start();
+      setIsRecordingAudio(true);
+      toast.info("Audio recording started...");
+    } catch (error) {
+      console.error("Error starting audio recording:", error);
+      toast.error("Failed to start audio recording. Please check microphone permissions.");
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      setIsRecordingAudio(false);
+      toast.success("Audio recording stopped.");
+    }
+  };
+
+  const resetAudioRecording = () => {
+    setAudioChunks([]);
+    setAudioBlob(null);
+    setIsRecordingAudio(false);
+    toast.info("Audio recording reset.");
+  };
+
   const handleVoiceResult = (transcript) => {
     setVoiceMessage(transcript);
     setConvertedText(`(Translated: ${transcript})`);
-    toast.success("Voice recorded!");
+    // toast.success("Voice recorded!"); // This toast is for speech-to-text, not audio file
   };
 
   const handleLocationSelect = (data) => {
@@ -115,11 +166,16 @@ const CitizenPage = () => {
   };
 
   const handleProofFileChange = (event) => {
-    setProofFiles(Array.from(event.target.files));
-    toast.success(`${event.target.files.length} file(s) selected.`);
+    const files = Array.from(event.target.files);
+    if (files.length + proofFiles.length > 2) {
+      toast.error("You can upload a maximum of 2 files in total.");
+      return;
+    }
+    setProofFiles((prev) => [...prev, ...files]);
+    toast.success(`${files.length} file(s) selected.`);
   };
 
-  const handleSubmitComplaint = () => {
+  const handleSubmitComplaint = async () => { // Added async
     if (kycStatus !== "VERIFIED") {
       toast.error("Only Verified Citizens can complain.");
       return;
@@ -130,36 +186,64 @@ const CitizenPage = () => {
       return;
     }
 
-    const complaintData = {
-      voiceMessageNepali: voiceMessage,
-      convertedTextEnglish: convertedText,
-      latitude: locationData.latitude,
-      longitude: locationData.longitude,
-      fullAddress: locationData.fullAddress,
-      hasProof: hasProof,
-      proofFiles: proofFiles.map((file) => file.name),
-      priority: priority,
-    };
+    if (proofFiles.length > 2) { // Added file limit check
+      toast.error("You can upload a maximum of 2 files.");
+      return;
+    }
 
-    console.log("Submitting Complaint:", complaintData);
-    toast.success("Complaint submitted successfully! (Simulated)");
+    const formData = new FormData();
+    formData.append("text", voiceMessage); // Mapping voiceMessage (Nepali text) to text
 
-    // Clear form data from sessionStorage on successful submission
-    sessionStorage.removeItem('complaint-form-currentStep');
-    sessionStorage.removeItem('complaint-form-voiceMessage');
-    sessionStorage.removeItem('complaint-form-convertedText');
-    sessionStorage.removeItem('complaint-form-locationData');
-    sessionStorage.removeItem('complaint-form-hasProof');
-    sessionStorage.removeItem('complaint-form-proofFiles');
-    sessionStorage.removeItem('complaint-form-priority');
+    if (audioBlob) {
+      formData.append("voiceClip", audioBlob, "voice_clip.webm"); // Appending the recorded audio blob
+    } else {
+      toast.error("Please record a voice clip.");
+      return;
+    }
 
-    setCurrentStep(1);
-    setVoiceMessage("");
-    setConvertedText("");
-    setLocationData(null);
-    setHasProof(false);
-    setProofFiles([]);
-    setPriority("Medium");
+    proofFiles.forEach((file) => {
+      formData.append("mediaFiles", file); // Appending each file in mediaFiles
+    });
+
+    formData.append("latitude", locationData.latitude);
+    formData.append("longitude", locationData.longitude);
+    formData.append("fullAddress", locationData.fullAddress);
+
+    try {
+      const response = await fetch("/api/complaints/send", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message || "Complaint submitted successfully!");
+        // Clear form data from sessionStorage on successful submission
+        sessionStorage.removeItem('complaint-form-currentStep');
+        sessionStorage.removeItem('complaint-form-voiceMessage');
+        sessionStorage.removeItem('complaint-form-convertedText');
+        sessionStorage.removeItem('complaint-form-locationData');
+        sessionStorage.removeItem('complaint-form-hasProof');
+        sessionStorage.removeItem('complaint-form-proofFiles');
+        sessionStorage.removeItem('complaint-form-priority');
+
+        setCurrentStep(1);
+        setVoiceMessage("");
+        setConvertedText("");
+        setLocationData(null);
+        setHasProof(false);
+        setProofFiles([]);
+        setPriority("Medium");
+        setAudioBlob(null); // Clear audio blob
+        resetAudioRecording(); // Reset audio recording state
+      } else {
+        toast.error(result.message || "Failed to submit complaint.");
+      }
+    } catch (error) {
+      console.error("Error submitting complaint:", error);
+      toast.error("An error occurred while submitting the complaint.");
+    }
   };
 
   const isFormDisabled = kycStatus !== 'VERIFIED';

@@ -154,8 +154,6 @@ const ContactUs = () => {
             </form>
           </div>
         </Card>
-
-        {/* Map + Info */}
         <div className="flex flex-col gap-5">
           <Card className="overflow-hidden h-56">
             <iframe
