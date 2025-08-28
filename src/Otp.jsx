@@ -6,11 +6,35 @@ import "react-toastify/dist/ReactToastify.css";
 const Otp = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { email, role } = location.state || {}; // role citizen/authority
 
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  // Read from sessionStorage first, then location.state
+  const initialEmail =
+    sessionStorage.getItem("otp-email") || location.state?.email;
+  const initialRole =
+    sessionStorage.getItem("otp-role") || location.state?.role;
+
+  const [email, setEmail] = useState(initialEmail);
+  const [role, setRole] = useState(initialRole);
+
+  const [otp, setOtp] = useState(() => {
+    const savedOtp = sessionStorage.getItem("otp-digits");
+    return savedOtp ? JSON.parse(savedOtp) : ["", "", "", "", "", ""];
+  });
   const [timer, setTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
+
+  // Redirect if email is not present (e.g., direct access)
+  useEffect(() => {
+    if (!email) {
+      toast.error("Email not provided. Please register again.");
+      navigate("/signup");
+    }
+  }, [email, navigate]);
+
+  // Save OTP digits to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("otp-digits", JSON.stringify(otp));
+  }, [otp]);
 
   // countdown
   useEffect(() => {
@@ -51,6 +75,10 @@ const Otp = () => {
         const result = await response.json();
         if (response.ok && result.success) {
           toast.success("✅ OTP Verified!");
+          // Clear sessionStorage on successful verification
+          sessionStorage.removeItem("otp-email");
+          sessionStorage.removeItem("otp-role");
+          sessionStorage.removeItem("otp-digits");
 
           // role अनुसार next step
           if (role === "citizen") {
@@ -91,6 +119,7 @@ const Otp = () => {
         toast.success("✅ OTP resent to your email!");
         setTimer(30);
         setCanResend(false);
+        sessionStorage.removeItem("otp-digits"); // Clear OTP on resend
       } else {
         toast.error(result.message || "❌ Failed to resend OTP.");
       }

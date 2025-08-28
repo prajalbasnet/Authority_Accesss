@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,8 +9,8 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import backgroundImage from "./assets/nepaliimage2.jpg"; // Using a different image for variety
-import nepalFlag from "./assets/HamroGunaso.png"; // Import the flag image
+import backgroundImage from "./assets/nepaliimage2.jpg";
+import nepalFlag from "./assets/HamroGunaso.png";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,6 +31,25 @@ const Login = () => {
     mode: "onBlur",
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (token && user) {
+      toast.info("You are already logged in.");
+      if (user.role === "AUTHORITY") {
+        navigate("/authority/dashboard");
+      } else if (user.role === "ADMIN") {
+        navigate("/admin/dashboard"); // Assuming an admin dashboard route
+      } else if (user.role === "USER") {
+        navigate("/citizen");
+      } else {
+        navigate("/"); // Default or error page
+      }
+    }
+  }, [navigate]);
+
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
@@ -40,28 +59,40 @@ const Login = () => {
       );
 
       if (response.data.success) {
-        localStorage.setItem("token", response.data.data.token);
+        const { token, user } = response.data.data;
+
+        // Store token and user object in localStorage
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+
         toast.success("Login Successful! Redirecting...");
-        // Redirect based on role
-        const userRole = response.data.data.role; // Assuming the role is in the response
-        if (userRole === 'authority') {
-            navigate("/authority/dashboard");
+
+        if (user.role === "AUTHORITY") {
+          navigate("/authority/dashboard");
+        } else if (user.role === "ADMIN") {
+          navigate("/admin/dashboard"); // Assuming an admin dashboard route
+        } else if (user.role === "USER") {
+          navigate("/citizen");
         } else {
-            navigate("/citizen");
+          navigate("/"); // Default or error page
         }
       } else {
         toast.error(response.data.message);
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error(error.response?.data?.message || "Login failed. Please try again.");
+      toast.error(
+        error.response?.data?.message || "Login failed. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const Label = ({ children }) => (
-    <label className="block font-semibold text-gray-700 text-sm mb-1.5">{children}</label>
+    <label className="block font-semibold text-gray-700 text-sm mb-1.5">
+      {children}
+    </label>
   );
 
   return (
@@ -77,9 +108,17 @@ const Login = () => {
         className="relative w-full max-w-md bg-white/80 backdrop-blur-lg p-6 rounded-2xl shadow-2xl border border-gray-200/50 transition-all duration-300"
       >
         <div className="flex flex-col items-center mb-6">
-          <img src={nepalFlag} alt="Nepal Flag" className="w-24 h-24 mb-0 object-contain" />
-          <h1 className="text-3xl font-bold font-poppins text-blue-900">Welcome Back</h1>
-          <p className="text-gray-900 text-sm mt-1">Please Login to continue!</p>
+          <img
+            src={nepalFlag}
+            alt="Nepal Flag"
+            className="w-24 h-24 mb-0 object-contain"
+          />
+          <h1 className="text-3xl font-bold font-poppins text-blue-900">
+            Welcome Back
+          </h1>
+          <p className="text-gray-900 text-sm mt-1">
+            Please Login to continue!
+          </p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <div>
@@ -91,13 +130,18 @@ const Login = () => {
               className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200/50 outline-none text-sm transition"
             />
             {errors.email && (
-              <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {errors.email.message}
+              </p>
             )}
           </div>
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <Label>Password</Label>
-              <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline font-semibold">
+              <Link
+                to="/forgot-password"
+                className="text-xs text-blue-600 hover:underline font-semibold"
+              >
                 Forgot Password?
               </Link>
             </div>
@@ -116,7 +160,9 @@ const Login = () => {
               </div>
             </div>
             {errors.password && (
-              <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {errors.password.message}
+              </p>
             )}
           </div>
           <div className="pt-3">
@@ -130,7 +176,10 @@ const Login = () => {
               }`}
             >
               {isSubmitting ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Logging In...</>
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Logging
+                  In...
+                </>
               ) : (
                 "Login"
               )}
@@ -139,7 +188,10 @@ const Login = () => {
         </form>
         <p className="text-center text-sm text-gray-600 mt-4">
           Don't have an account?{" "}
-          <Link to="/signup" className="font-bold text-blue-600 hover:underline hover:text-red-500 transition-all duration-300">
+          <Link
+            to="/signup"
+            className="font-bold text-blue-600 hover:underline hover:text-red-500 transition-all duration-300"
+          >
             Register now
           </Link>
         </p>

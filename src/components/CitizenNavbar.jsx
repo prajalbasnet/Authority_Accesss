@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserCircle } from "react-icons/fa"; // Using react-icons for a profile icon
+import { FaUserCircle } from "react-icons/fa";
 
 const CitizenNavbar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [kycStatus, setKycStatus] = useState(null); // null, 'pending', 'verified'
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")));
   const navigate = useNavigate();
 
   useEffect(() => {
-    const status = localStorage.getItem("isKycVerified");
-    setKycStatus(status);
-
-    // Listen for changes in localStorage (e.g., from KycVerification page)
     const handleStorageChange = () => {
-      setKycStatus(localStorage.getItem("isKycVerified"));
+      setUser(JSON.parse(localStorage.getItem("user")));
     };
     window.addEventListener("storage", handleStorageChange);
     return () => {
@@ -22,24 +18,38 @@ const CitizenNavbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Clear token on logout
-    localStorage.removeItem("isKycVerified"); // Clear KYC status on logout
-    navigate("/login"); // Redirect to login page
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
   const getKycBadge = () => {
-    let badgeText = "Unverified";
-    let badgeColor = "bg-gray-500";
+    if (!user) return null;
+
+    const status = (user.status || "UNVERIFIED").toUpperCase();
+    let badgeText = "";
+    let badgeColor = "";
     let linkTo = "/citizen/kyc";
 
-    if (kycStatus === "pending") {
-      badgeText = "KYC Pending";
-      badgeColor = "bg-yellow-500";
-      linkTo = "/citizen/kyc"; // Still link to KYC page if pending
-    } else if (kycStatus === "verified") {
-      badgeText = "Verified";
-      badgeColor = "bg-green-500";
-      linkTo = "/citizen/profile"; // Or a profile page
+    switch (status) {
+      case "VERIFIED":
+        badgeText = "Verified";
+        badgeColor = "bg-green-500";
+        linkTo = "/citizen/profile";
+        break;
+      case "PENDING":
+        badgeText = "KYC Pending";
+        badgeColor = "bg-yellow-500";
+        break;
+      case "REJECTED":
+        badgeText = "KYC Rejected";
+        badgeColor = "bg-red-500";
+        break;
+      case "UNVERIFIED":
+      default:
+        badgeText = "Unverified";
+        badgeColor = "bg-gray-600";
+        break;
     }
 
     return (
@@ -67,7 +77,7 @@ const CitizenNavbar = () => {
             className="flex items-center space-x-2 focus:outline-none"
           >
             <FaUserCircle className="text-4xl" />
-            <span className="hidden md:block">Profile</span>
+            <span className="hidden md:block">{user ? user.fullName : 'Profile'}</span>
           </button>
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
