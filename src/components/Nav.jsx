@@ -85,11 +85,11 @@ const Navbar = () => {
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center space-x-4">
             <Link
-              to="/login"
+              to="/signup"
               className="bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:shadow-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 flex items-center transform hover:-translate-y-0.5"
             >
               <LogIn className="w-5 h-5 mr-2" />
-              Login
+              Register
             </Link>
           </div>
 
