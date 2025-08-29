@@ -41,7 +41,7 @@ const Login = () => {
       if (user.role === "AUTHORITY") {
         navigate("/authority/dashboard");
       } else if (user.role === "ADMIN") {
-        navigate("/admin/dashboard"); // Assuming an admin dashboard route
+        navigate("/admin"); // Redirect to admin dashboard home
       } else if (user.role === "USER") {
         navigate("/citizen");
       } else {
@@ -53,24 +53,28 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
+      const API = import.meta.env.VITE_API_BASE_URL || "";
       const response = await axios.post(
-        "https://3b41727a9f0b.ngrok-free.app/api/auth/login",
+        `${API}/api/auth/login`,
         data
       );
 
       if (response.data.success) {
-        const { token, user } = response.data.data;
+        const { token, user, location } = response.data.data;
 
-        // Store token and user object in localStorage
+        // Store token, user, and location in localStorage
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
+        if (location) {
+          localStorage.setItem("location", JSON.stringify(location));
+        }
 
         toast.success("Login Successful! Redirecting...");
 
         if (user.role === "AUTHORITY") {
           navigate("/authority/dashboard");
         } else if (user.role === "ADMIN") {
-          navigate("/admin/dashboard"); // Assuming an admin dashboard route
+          navigate("/admin"); // Redirect to admin dashboard home
         } else if (user.role === "USER") {
           navigate("/citizen");
         } else {

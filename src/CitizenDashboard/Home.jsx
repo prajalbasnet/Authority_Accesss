@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Navbar from "../components/Nav";
 import { Link } from "react-router-dom";
 import { FaFileAlt, FaClipboardList, FaGlobe, FaCheckCircle, FaHourglassHalf, FaTimesCircle, FaExclamationCircle, FaHistory, FaBullhorn } from 'react-icons/fa';
 
@@ -16,20 +17,23 @@ const Home = () => {
     const [loadingActivity, setLoadingActivity] = useState(true);
     const [errorActivity, setErrorActivity] = useState(null);
 
+    const [showNavbar, setShowNavbar] = useState(false);
+
     useEffect(() => {
+        const handleScroll = () => {
+            setShowNavbar(window.scrollY > 10);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const API = import.meta.env.VITE_API_BASE_URL || "";
+
         const fetchComplaintStats = async () => {
+            setLoadingStats(true);
             try {
-                // --- API Integration Details ---
-                // This is a conceptual API endpoint to get a summary of the user's complaint statistics.
-                // Replace with your actual backend API endpoint.
-                // Expected response:
-                // {
-                //   new: 5,
-                //   pending: 3,
-                //   solved: 10,
-                //   escalated: 1
-                // }
-                const response = await fetch('/api/user/complaint-stats', {
+                const response = await fetch(`${API}/api/user/complaint-stats`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     },
@@ -47,10 +51,10 @@ const Home = () => {
         };
 
         const fetchRecentActivity = async () => {
+            setLoadingActivity(true);
             try {
-                // --- API Integration Details ---
                 // Fetch recent user complaints
-                const myComplaintsResponse = await fetch('/api/user/my-complaints?limit=3', {
+                const myComplaintsResponse = await fetch(`${API}/api/user/my-complaints?limit=3`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     },
@@ -61,7 +65,7 @@ const Home = () => {
                 const myComplaintsData = await myComplaintsResponse.json();
 
                 // Fetch recent public broadcasts
-                const publicFeedResponse = await fetch('/api/public-feed?limit=3');
+                const publicFeedResponse = await fetch(`${API}/api/public-feed?limit=3`);
                 if (!publicFeedResponse.ok) {
                     throw new Error(`HTTP error! status: ${publicFeedResponse.status}`);
                 }
@@ -70,8 +74,8 @@ const Home = () => {
                 // Combine and sort by date
                 const combinedActivity = [
                     ...myComplaintsData.map(c => ({ ...c, type: 'my-complaint', displayDate: c.dateFiled })),
-                    ...publicFeedData.map(f => ({ ...f, type: 'broadcast', displayDate: f.date || f.dateFiled })) // Use 'date' for broadcasts, 'dateFiled' for complaints
-                ].sort((a, b) => new Date(b.displayDate) - new Date(a.displayDate)).slice(0, 5); // Get top 5 recent
+                    ...publicFeedData.map(f => ({ ...f, type: 'broadcast', displayDate: f.date || f.dateFiled }))
+                ].sort((a, b) => new Date(b.displayDate) - new Date(a.displayDate)).slice(0, 5);
 
                 setRecentActivity(combinedActivity);
             } catch (err) {
@@ -86,7 +90,9 @@ const Home = () => {
     }, []);
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen font-sans">
+        <>
+            {showNavbar && <Navbar />}
+            <div className="p-6 bg-gray-50 min-h-screen font-sans">
             <h1 className="text-5xl font-extrabold mb-8 text-red-700 text-center tracking-tight leading-tight">
                 Welcome to Your Citizen Dashboard!
             </h1>
@@ -200,6 +206,7 @@ const Home = () => {
                 )}
             </div>
         </div>
+        </>
     );
 };
 

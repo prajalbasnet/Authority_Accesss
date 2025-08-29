@@ -1,4 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import Webcam from "react-webcam";
+import { FaCamera } from "react-icons/fa";
+// ...existing code...
 import CitizenNavbar from "./components/CitizenNavbar";
 import LocationSelector from "./components/LocationSelector";
 import {
@@ -18,6 +21,42 @@ import Dictaphone from "./Dictaphone";
 import { Link, useNavigate } from "react-router-dom";
 
 const CitizenPage = () => {
+  // Camera modal state for proof capture
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [livePhoto, setLivePhoto] = useState(null);
+  const webcamRef = useRef(null);
+
+  // Convert dataURL to File
+  const dataURLtoFile = (dataurl, filename) => {
+    const arr = dataurl.split(",");
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  const captureProofPhoto = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setLivePhoto(imageSrc);
+  }, [webcamRef]);
+
+  const handleRetakePhoto = () => {
+    setLivePhoto(null);
+  };
+
+  const handleDoneCapture = () => {
+    if (livePhoto) {
+      const file = dataURLtoFile(livePhoto, `proof-photo-${Date.now()}.jpg`);
+      setProofFiles((prev) => [...prev, file]);
+      toast.success("Photo captured and added as proof!");
+      setIsCameraOpen(false);
+      setLivePhoto(null);
+    }
+  };
   // Initialize state from sessionStorage or default values
   const [currentStep, setCurrentStep] = useState(() => {
     const saved = sessionStorage.getItem("complaint-form-currentStep");
@@ -27,10 +66,7 @@ const CitizenPage = () => {
     const saved = sessionStorage.getItem("complaint-form-voiceMessage");
     return saved ? saved : "";
   });
-  const [convertedText, setConvertedText] = useState(() => {
-    const saved = sessionStorage.getItem("complaint-form-convertedText");
-    return saved ? saved : "";
-  });
+  // Removed convertedText state
   const [locationData, setLocationData] = useState(() => {
     const saved = sessionStorage.getItem("complaint-form-locationData");
     return saved ? JSON.parse(saved) : null;
@@ -75,9 +111,7 @@ const CitizenPage = () => {
     sessionStorage.setItem("complaint-form-voiceMessage", voiceMessage);
   }, [voiceMessage]);
 
-  useEffect(() => {
-    sessionStorage.setItem("complaint-form-convertedText", convertedText);
-  }, [convertedText]);
+  // Removed convertedText sessionStorage effect
 
   useEffect(() => {
     sessionStorage.setItem(
@@ -91,28 +125,9 @@ const CitizenPage = () => {
   }, [hasProof]);
 
   useEffect(() => {
-    // Store only file names for proofFiles, as actual File objects cannot be serialized
-    sessionStorage.setItem(
-      "complaint-form-proofFiles",
-      JSON.stringify(
-        proofFiles.map((file) => ({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-        }))
-      )
-    );
-  }, [proofFiles]);
-
-  useEffect(() => {
-    sessionStorage.setItem("complaint-form-priority", priority);
-  }, [priority]);
-
-  useEffect(() => {
     const handleStorageChange = () => {
       const user = JSON.parse(localStorage.getItem("user"));
-      const newStatus =
-        user && user.status ? user.status.toUpperCase() : "UNVERIFIED";
+      const newStatus = user && user.status ? user.status.toUpperCase() : "UNVERIFIED";
       setKycStatus(newStatus);
       if (newStatus === "VERIFIED" || newStatus === "PENDING") {
         setShowKycPrompt(false);
@@ -124,14 +139,17 @@ const CitizenPage = () => {
     };
   }, []);
 
-  const handleVoiceResult = (transcript) => {
+  // Only set voice message, do not show toast here
+  const handleVoiceResult = (transcript, showToast = false) => {
     setVoiceMessage(transcript);
-    setConvertedText(`(Translated: ${transcript})`);
-    toast.success("Voice recorded!");
+    if (showToast) {
+      toast.success("Voice recorded!");
+    }
   };
 
   const handleLocationSelect = (data) => {
     setLocationData(data);
+    // Only show toast after location is actually selected
     toast.success("Location selected!");
   };
 
@@ -151,28 +169,27 @@ const CitizenPage = () => {
       return;
     }
 
-    const complaintData = {
-      voiceMessageNepali: voiceMessage,
-      convertedTextEnglish: convertedText,
-      latitude: locationData.latitude,
-      longitude: locationData.longitude,
-      fullAddress: locationData.fullAddress,
-      hasProof: hasProof,
-      proofFiles: proofFiles.map((file) => file.name),
-      priority: priority,
-    };
-
-    console.log("Submitting Complaint:", complaintData);
+    const formData = new FormData();
+    formData.append('text', voiceMessage);
+    formData.append('latitude', locationData.latitude);
+    formData.append('longitude', locationData.longitude);
+    formData.append('fullAddress', locationData.fullAddress);
+    // Only append files if hasProof is true and files exist
+    if (hasProof && proofFiles && proofFiles.length > 0) {
+      proofFiles.forEach((file) => {
+        formData.append('mediaFiles', file);
+      });
+    }
     // --- API Call for Complaint Submission ---
-    // This is where you would send the complaintData to your backend API.
-    // Example using fetch:
-    fetch('/api/dummy-submit-complaint', { // Changed URL to dummy
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('authToken')}`, // Assuming authentication
-        },
-        body: JSON.stringify(complaintData),
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+  const API = import.meta.env.VITE_API_BASE_URL || "";
+  fetch(`${API}/api/complaints/send`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        // Do NOT set Content-Type; browser will set it for FormData
+      },
+      body: formData,
     })
     .then(response => {
         if (!response.ok) {
@@ -186,7 +203,6 @@ const CitizenPage = () => {
         // Clear form data from sessionStorage on successful submission
         sessionStorage.removeItem("complaint-form-currentStep");
         sessionStorage.removeItem("complaint-form-voiceMessage");
-        sessionStorage.removeItem("complaint-form-convertedText");
         sessionStorage.removeItem("complaint-form-locationData");
         sessionStorage.removeItem("complaint-form-hasProof");
         sessionStorage.removeItem("complaint-form-proofFiles");
@@ -194,11 +210,9 @@ const CitizenPage = () => {
 
         setCurrentStep(1);
         setVoiceMessage("");
-        setConvertedText("");
         setLocationData(null);
         setHasProof(false);
         setProofFiles([]);
-        setPriority("Medium");
     })
     .catch(error => {
         console.error('Error submitting complaint:', error);
@@ -328,13 +342,6 @@ const CitizenPage = () => {
                         <p className="text-red-700 text-lg">
                           <strong>Your Voice (Nepali):</strong> {voiceMessage}
                         </p>
-                        <p className="text-red-700 text-lg">
-                          <strong>Converted Text (English):</strong>{" "}
-                          {convertedText}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-2">
-                          *Nepali to English conversion requires an external API.
-                        </p>
                       </div>
                     )}
                   </div>
@@ -362,7 +369,7 @@ const CitizenPage = () => {
               {currentStep === 2 && (
                 <div className="space-y-8 animate-fade-in">
                   <h2 className="text-3xl font-bold text-blue-700 mb-4">
-                    Step 2: Add Proof & Set Priority
+                    Step 2: Add Proof
                   </h2>
 
                   {/* Proof Upload Section */}
@@ -378,104 +385,81 @@ const CitizenPage = () => {
                         className={`px-6 py-2 rounded-md font-semibold text-lg transition-all duration-200 flex items-center
                           ${hasProof
                             ? "bg-red-700 text-white shadow-md"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
+                            : "bg-white text-red-700 border border-red-700"}
                         `}
                       >
-                        Yes <FaCheckCircle className="inline-block ml-2" />
+                        Yes
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setHasProof(false);
-                          setProofFiles([]);
-                        }}
+                        onClick={() => setHasProof(false)}
                         className={`px-6 py-2 rounded-md font-semibold text-lg transition-all duration-200 flex items-center
                           ${!hasProof
                             ? "bg-red-700 text-white shadow-md"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
+                            : "bg-white text-red-700 border border-red-700"}
                         `}
                       >
-                        No <FaTimesCircle className="inline-block ml-2" />
+                        No
                       </button>
                     </div>
 
                     {hasProof && (
                       <div className="mt-4">
-                        <label
-                          htmlFor="proof-upload"
-                          className="block text-base font-medium text-gray-700 mb-2"
-                        >
-                          Upload Image/Video:
-                        </label>
                         <input
                           type="file"
-                          id="proof-upload"
-                          ref={fileInputRef}
                           multiple
                           accept="image/*,video/*"
+                          ref={fileInputRef}
                           onChange={handleProofFileChange}
-                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer"
+                          className="hidden"
                         />
-                        {proofFiles.length > 0 && (
-                          <div className="mt-3 text-sm text-gray-600">
-                            Selected files:{" "}
-                            <span className="font-semibold">
-                              {proofFiles.map((file) => file.name).join(", ")}
-                            </span>
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                          className="px-4 py-2 bg-blue-700 text-white rounded-md shadow-md hover:bg-blue-800"
+                        >
+                          Upload Proof
+                        </button>
+                        <div className="mt-2">
+                          {proofFiles.length > 0 && (
+                            <ul className="list-disc list-inside text-sm text-gray-700">
+                              {proofFiles.map((file, idx) => (
+                                <li key={idx}>{file.name}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Priority Selection */}
-                  <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm">
-                    <p className="text-lg font-semibold text-gray-800 mb-4">
-                      Set Priority:
+                  {/* Review Section */}
+                  <div className="bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm">
+                    <h3 className="text-xl font-semibold text-green-700 mb-2">Review Your Complaint</h3>
+                    <p className="text-gray-800 mb-2">
+                      <strong>Complaint (Nepali):</strong> {voiceMessage}
                     </p>
-                    <div className="flex space-x-4">
-                      <button
-                        type="button"
-                        onClick={() => setPriority("High")}
-                        className={`px-6 py-2 rounded-md font-semibold text-lg transition-all duration-200
-                          ${priority === "High"
-                            ? "bg-red-700 text-white shadow-md"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
-                        `}
-                      >
-                        High
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Medium")}
-                        className={`px-6 py-2 rounded-md font-semibold text-lg transition-all duration-200
-                          ${priority === "Medium"
-                            ? "bg-blue-700 text-white shadow-md"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
-                        `}
-                      >
-                        Medium
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPriority("Low")}
-                        className={`px-6 py-2 rounded-md font-semibold text-lg transition-all duration-200
-                          ${priority === "Low"
-                            ? "bg-gray-700 text-white shadow-md"
-                            : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
-                        `}
-                      >
-                        Low
-                      </button>
-                    </div>
+                    <p className="text-gray-800 mb-2">
+                      <strong>Location:</strong> {locationData?.fullAddress}
+                    </p>
+                    {hasProof && proofFiles.length > 0 && (
+                      <div className="mb-2">
+                        <strong>Proof Files:</strong>
+                        <ul className="list-disc list-inside text-sm text-gray-700">
+                          {proofFiles.map((file, idx) => (
+                            <li key={idx}>{file.name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between mt-8">
                     <button
                       onClick={() => setCurrentStep(1)}
-                      className="px-8 py-3 bg-gray-600 text-white font-bold rounded-lg shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-300 flex items-center"
+                      className="px-8 py-3 bg-gray-600 text-white font-bold rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-300 flex items-center"
                     >
-                      <FaArrowLeft className="mr-2" /> Back
+                      <FaArrowLeft className="mr-2" /> Previous Step
                     </button>
                     <button
                       onClick={() => setCurrentStep(3)}
@@ -505,20 +489,10 @@ const CitizenPage = () => {
                       </span>
                     </p>
                     <p className="text-lg">
-                      <strong>Converted Text (English):</strong>{" "}
-                      <span className="text-gray-700">
-                        {convertedText || "N/A"}
-                      </span>
-                    </p>
-                    <p className="text-lg">
                       <strong>Location:</strong>{" "}
                       <span className="text-gray-700">
                         {locationData
-                          ? `${
-                              locationData.fullAddress
-                            } (Lat: ${locationData.latitude.toFixed(
-                              4
-                            )}, Lon: ${locationData.longitude.toFixed(4)})`
+                          ? `${locationData.fullAddress} (Lat: ${locationData.latitude?.toFixed(4)}, Lon: ${locationData.longitude?.toFixed(4)})`
                           : "N/A"}
                       </span>
                     </p>
@@ -530,12 +504,6 @@ const CitizenPage = () => {
                             ? proofFiles.map((file) => file.name).join(", ")
                             : "Yes, but no files selected"
                           : "No"}
-                      </span>
-                    </p>
-                    <p className="text-lg">
-                      <strong>Priority:</strong>{" "}
-                      <span className="font-bold text-red-700">
-                        {priority}
                       </span>
                     </p>
                   </div>
@@ -562,6 +530,6 @@ const CitizenPage = () => {
       </div>
     </div>
   );
-};
+}
 
 export default CitizenPage;

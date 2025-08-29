@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 
 const KycVerification = () => {
   // State for form fields
+  const [phonenumber, setPhonenumber] = useState("");
   const [userPhoto, setUserPhoto] = useState(() => {
     const saved = sessionStorage.getItem('kyc-form-userPhoto');
     return saved ? JSON.parse(saved) : null;
@@ -93,13 +94,15 @@ const KycVerification = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('userPhoto', dataURLtoBlob(userPhoto), 'user-photo.jpg');
-    formData.append('frontImage', frontImage);
-    formData.append('backImage', backImage);
+  const formData = new FormData();
+  formData.append('phonenumber', phonenumber);
+  formData.append('userPhoto', dataURLtoBlob(userPhoto), 'user-photo.jpg');
+  formData.append('frontImage', frontImage);
+  formData.append('backImage', backImage);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/users/kyc', formData, {
+  const API = import.meta.env.VITE_API_BASE_URL || "";
+  const response = await axios.post(`${API}/api/users/kyc`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -193,6 +196,17 @@ const KycVerification = () => {
                 {backImage && <p className="mt-2 text-sm text-gray-600">Selected: {backImage.name}</p>}
               </div>
 
+              <div>
+                <label htmlFor="phonenumber" className="block text-sm font-medium text-gray-700 mb-2">Phone Number:</label>
+                <input
+                  type="text"
+                  id="phonenumber"
+                  value={phonenumber}
+                  onChange={e => setPhonenumber(e.target.value)}
+                  className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200/50 outline-none text-sm transition"
+                  required
+                />
+              </div>
               <button
                 type="submit"
                 disabled={isSubmitting}

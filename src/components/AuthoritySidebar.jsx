@@ -1,23 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaUserCircle, FaEdit, FaListAlt, FaBullhorn, FaSignOutAlt } from 'react-icons/fa';
 
-const CitizenSidebar = () => {
+const AuthoritySidebar = ({ authorityType = "Authority" }) => {
     const location = useLocation();
-
     const navItems = [
-        { name: 'File Complaint', icon: FaEdit, path: '/citizen/file-complaint' },
-        { name: 'My Complaints', icon: FaListAlt, path: '/citizen/my-complaints' },
-        { name: 'Broadcast Feed', icon: FaBullhorn, path: '/citizen/complaint-feed' },
+        { name: 'Dashboard', path: '/authority/dashboard' },
+        { name: 'Complaints', path: '/authority/complaints' },
+        { name: 'Broadcast Feed', path: '/authority/broadcast-feed' },
     ];
-
-    // Get citizen name from localStorage
-    let citizenName = 'Citizen';
-    try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user && user.fullName) citizenName = user.fullName.split(' ')[0];
-    } catch {}
-
     return (
         <aside
             className="w-72 min-h-screen flex flex-col py-8 px-6 bg-white/20 backdrop-blur-2xl shadow-2xl border-r border-blue-900 relative overflow-hidden"
@@ -26,17 +16,13 @@ const CitizenSidebar = () => {
                 boxShadow: '0 8px 32px 0 rgba(15,23,42,0.45)',
             }}
         >
-            {/* Glassy gradient accent */}
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-blue-600/60 to-blue-400/30 blur-2xl opacity-60 pointer-events-none z-0" />
-            {/* Profile Section */}
             <div className="relative z-10 flex flex-col items-center mb-10">
-                <span className="text-lg font-bold text-blue-50 tracking-wide drop-shadow-lg mt-2">Welcome, <span className="font-extrabold text-blue-100">{citizenName}</span>!</span>
+                <span className="text-lg font-bold text-blue-50 tracking-wide drop-shadow-lg mt-2">Welcome, <span className="font-extrabold text-blue-100">{authorityType}</span>!</span>
             </div>
-            {/* Navigation */}
             <nav className="flex-grow relative z-10">
                 <ul className="space-y-2">
                     {navItems.map((item) => {
-                        // Make active if current path starts with the nav path (for redirect cases)
                         const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
                         return (
                             <li key={item.name}>
@@ -52,7 +38,6 @@ const CitizenSidebar = () => {
                                         border: '2px solid #2563eb',
                                     } : {}}
                                 >
-                                    <item.icon className={`text-2xl ${isActive ? 'drop-shadow-glow' : ''}`} />
                                     <span className="tracking-wide">{item.name}</span>
                                 </Link>
                             </li>
@@ -60,20 +45,12 @@ const CitizenSidebar = () => {
                     })}
                 </ul>
             </nav>
-            {/* Logout Button (optional) */}
-            {/*
-            <button className="flex items-center gap-2 px-4 py-2 mt-8 rounded-lg bg-blue-100/40 text-blue-700 hover:bg-blue-200/60 transition-all font-semibold shadow-md">
-                <FaSignOutAlt className="text-lg" /> Logout
-            </button>
-            */}
-            {/* Footer */}
             <div className="mt-auto pt-8 border-t border-blue-200 text-xs text-blue-300 text-center tracking-wide relative z-10">
                 &copy; 2025 Authority Access
             </div>
-            {/* Glow effect */}
             <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-60 h-24 bg-blue-400/30 blur-3xl rounded-full opacity-60 z-0" />
         </aside>
     );
 };
 
-export default CitizenSidebar;
+export default AuthoritySidebar;

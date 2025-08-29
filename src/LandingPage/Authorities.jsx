@@ -5,7 +5,6 @@ import {
   FaRoad,
   FaShieldAlt,
   FaFire,
-  FaShieldHalved, // New import for Cyber Bureau
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -34,7 +33,7 @@ const authorities = [
   },
   {
     name: "Cyber Bureau",
-    icon: <FaShieldHalved size={40} className="text-indigo-600" />,
+  icon: <FaShieldAlt size={40} className="text-indigo-600" />,
     description: "Handles cybercrime, digital security, and online fraud.",
     responseTime: "Immediate to 24 hours",
     location: "National",
@@ -46,7 +45,7 @@ const authorities = [
   {
     name: "Water Supply",
     icon: <FaTint size={40} className="text-blue-400" />,
-    description: "Ensures clean water supply and sanitation.",
+  description: "Ensures clean water supply.",
     responseTime: "4-8 hours",
     location: "Urban & Rural",
     phone: "01-4211594",

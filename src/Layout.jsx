@@ -1,18 +1,20 @@
 // src/Layout.jsx
 import React from "react";
-// import Navbar from "./components/Nav"; // Comment out
-// import Footer from "./components/Footer"; // Comment out
-// import ChatAssistant from "./components/ChatAssistant"; // Comment out
+import { Outlet } from "react-router-dom";
+import Navbar from "./components/Nav";
+import Footer from "./components/Footer";
+import ChatAssistant from "./components/ChatAssistant";
 
 
-const Layout = ({ children }) => {
+const Layout = () => {
     return (
-        <div style={{ backgroundColor: 'lightblue', padding: '20px', border: '2px solid blue' }}>
-            <h1>Layout Test - Stripped Down!</h1>
-            <p>If you see this, the problem is in Navbar, Footer, or ChatAssistant.</p>
-            <div style={{ border: '1px dashed gray', padding: '10px', marginTop: '10px' }}>
-                {children}
-            </div>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            <Navbar />
+            <main className="flex-grow">
+                <Outlet />
+            </main>
+            <ChatAssistant />
+            <Footer />
         </div>
     );
 };

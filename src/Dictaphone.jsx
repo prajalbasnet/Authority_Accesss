@@ -12,7 +12,7 @@ const Dictaphone = ({ onResult }) => {
 
   useEffect(() => {
     if (transcript && onResult) {
-      onResult(transcript);
+      onResult(transcript, false); // Do not show toast on every update
     }
   }, [transcript, onResult]);
 
@@ -32,7 +32,7 @@ const Dictaphone = ({ onResult }) => {
   const stopListening = () => {
     SpeechRecognition.stopListening();
     if (onResult) {
-      onResult(transcript); // Pass the final transcript when stopping
+      onResult(transcript, true); // Show toast only when stopped
     }
   };
 

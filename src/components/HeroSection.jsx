@@ -28,7 +28,7 @@ const complaints = [
     province: "Karnali",
     type: "emergency",
   },
-  { text: "नाला अबरुद्ध छ !", province: "Madhesh", type: "sanitation" },
+  // Removed sanitation complaint (not in 7 authorities)
   { text: "विद्यालय बन्द छ !", province: "Gandaki", type: "education" },
   { text: "सडकमा धुलो धेरै !", province: "Lumbini", type: "environment" },
   { text: "पानीको दबाब कम !", province: "Koshi", type: "water" },
@@ -57,12 +57,7 @@ const typeColors = {
   power: "bg-yellow-100 text-yellow-800 border-yellow-200",
   water: "bg-blue-100 text-blue-800 border-blue-200",
   road: "bg-gray-100 text-gray-800 border-gray-200",
-  security: "bg-red-100 text-red-800 border-red-200",
-  health: "bg-green-100 text-green-800 border-green-200",
-  emergency: "bg-orange-100 text-orange-800 border-orange-200",
-  sanitation: "bg-purple-100 text-purple-800 border-purple-200",
-  education: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  environment: "bg-teal-100 text-teal-800 border-teal-200",
+  // Removed color mappings for authorities not in the 7 allowed
 };
 
 export default function HeroSection() {

@@ -2,11 +2,18 @@ import React, { useState, useEffect } from "react";
 import { Menu, X, LogIn } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useScroll } from "../ScrollContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
+  const { scrollToSection } = useScroll();
+
+  // Scroll to top on every route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +32,18 @@ const Navbar = () => {
     { path: "/contact", label: "Contact Us" },
   ];
 
+  const handleNavClick = (item) => (e) => {
+    if (location.pathname === item.path) {
+      e.preventDefault();
+      if (scrollToSection && scrollToSection[item.path]) {
+        scrollToSection[item.path]();
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      setIsOpen(false);
+    }
+  };
+
   const mobileMenuVariants = {
     hidden: { opacity: 0, height: 0 },
     visible: { opacity: 1, height: "auto", transition: { duration: 0.3 } },
@@ -32,13 +51,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200"
-          : "bg-white"
-      }`}
-    >
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200" : "bg-white"}`}>
       <div className="max-w-7xl mx-auto px-0 sm:px-0 lg:px-0">
         <div className="flex justify-between items-center py-0">
           {/* Logo Only */}
@@ -58,6 +71,7 @@ const Navbar = () => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  onClick={handleNavClick(item)}
                   className={`relative font-medium transition-all duration-200 transform ${
                     isActive
                       ? "text-blue-600 font-semibold"
@@ -120,12 +134,15 @@ const Navbar = () => {
                     <Link
                       key={item.path}
                       to={item.path}
+                      onClick={(e) => {
+                        handleNavClick(item)(e);
+                        setIsOpen(false);
+                      }}
                       className={`block py-2 px-3 rounded-lg transition-colors ${
                         isActive
                           ? "bg-blue-50 text-blue-600 font-semibold"
                           : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
                       }`}
-                      onClick={() => setIsOpen(false)}
                     >
                       {item.label}
                     </Link>

@@ -63,8 +63,9 @@ const Otp = () => {
     const fullOtp = otp.join("");
     if (fullOtp.length === 6) {
       try {
+        const API = import.meta.env.VITE_API_BASE_URL || "";
         const response = await fetch(
-          `https://3b41727a9f0b.ngrok-free.app/api/otp/verify/VERIFY_EMAIL`,
+          `${API}/api/otp/verify/VERIFY_EMAIL`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -104,8 +105,9 @@ const Otp = () => {
   // resend OTP
   const handleResend = async () => {
     try {
+      const API = import.meta.env.VITE_API_BASE_URL || "";
       const response = await fetch(
-        `https://3b41727a9f0b.ngrok-free.app/api/otp/send/VERIFY_EMAIL`,
+        `${API}/api/otp/send/VERIFY_EMAIL`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

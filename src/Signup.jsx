@@ -11,9 +11,12 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+
 import backgroundImage from "./assets/nepaliimage2.jpg";
+import MapPicker from "./components/MapPicker";
 
 // ================== VALIDATION SCHEMAS ==================
+
 const baseSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
   email: z
@@ -21,10 +24,14 @@ const baseSchema = z.object({
     .min(1, "Email is required.")
     .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Enter a valid email."),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  fullAddress: z.string().min(1, "Address is required."),
+  latitude: z.number({ invalid_type_error: "Latitude is required." }),
+  longitude: z.number({ invalid_type_error: "Longitude is required." }),
 });
 
 const authoritySchema = baseSchema.extend({
   authorityType: z.string().min(1, "Authority type is required."),
+  phoneNumber: z.string().min(5, "Phone number is required."),
   profilePhoto: z
     .any()
     .refine((files) => files?.length === 1, "Profile photo is required."),
@@ -37,6 +44,7 @@ const authoritySchema = baseSchema.extend({
   authorityIdentityCardImage: z
     .any()
     .refine((files) => files?.length === 1, "Identity card is required."),
+  // fullAddress, latitude, longitude will be set via map picker, not manual
 });
 
 // ================== COMPONENT ==================
@@ -44,6 +52,8 @@ const Signup = () => {
   const [role, setRole] = useState("citizen"); // citizen | authority
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [location, setLocation] = useState({ latitude: null, longitude: null, fullAddress: "" });
   const schema = role === "citizen" ? baseSchema : authoritySchema;
   const navigate = useNavigate();
 
@@ -73,6 +83,12 @@ const Signup = () => {
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (token && user) {
+      // If admin, allow to stay and logout (do not redirect)
+      if (user.role === "ADMIN") {
+        toast.info("You are logged in as admin. Please logout to register a new user.");
+        return;
+      }
+      // If citizen or authority, redirect as before
       toast.info("You are already logged in.");
       if (user.role === "AUTHORITY") {
         navigate("/authority/dashboard");
@@ -87,6 +103,7 @@ const Signup = () => {
     setUserPhoto(null);
     setLivePhoto(null);
     setIsCameraOpen(false);
+    setLocation({ latitude: null, longitude: null, fullAddress: "" });
   }, [role, reset]);
 
   // Save form data to sessionStorage on change
@@ -96,6 +113,13 @@ const Signup = () => {
     });
     return () => subscription.unsubscribe();
   }, [watch, role]);
+
+  // Sync location state to form fields
+  useEffect(() => {
+    setValue("latitude", location.latitude || "");
+    setValue("longitude", location.longitude || "");
+    setValue("fullAddress", location.fullAddress || "");
+  }, [location, setValue]);
 
   // ================== PHOTO CAPTURE LOGIC ==================
   const dataURLtoBlob = (dataurl) => {
@@ -140,44 +164,53 @@ const Signup = () => {
     setIsSubmitting(true);
     try {
       if (role === "citizen") {
+        // Use location state for lat/lng/address
+        const payload = {
+          fullName: data.fullName,
+          email: data.email,
+          password: data.password,
+          fullAddress: location.fullAddress,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        };
         const response = await axios.post(
-          "https://3b41727a9f0b.ngrok-free.app/api/auth/register",
-          {
-            fullName: data.fullName,
-            email: data.email,
-            password: data.password,
-          },
+          `${import.meta.env.VITE_API_BASE_URL || ""}/api/auth/register`,
+          payload,
           { headers: { "Content-Type": "application/json" } }
         );
 
         if (response.status === 200) {
           toast.success("Registered successfully! Now verify your OTP.");
-          sessionStorage.removeItem("signup-form-citizen"); // Clear form data on successful submission
+          sessionStorage.removeItem("signup-form-citizen");
           sessionStorage.setItem("otp-email", data.email);
           sessionStorage.setItem("otp-role", role);
           navigate("/otp", { state: { email: data.email, role: "citizen" } });
         }
       } else {
+        // Use location state for lat/lng/address
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-          if (
-            [
-              "profilePhoto",
-              "citizenshipFrontImage",
-              "citizenshipBackImage",
-              "authorityIdentityCardImage",
-            ].includes(key)
-          ) {
+          if ([
+            "profilePhoto",
+            "citizenshipFrontImage",
+            "citizenshipBackImage",
+            "authorityIdentityCardImage",
+          ].includes(key)) {
             if (value?.[0]) {
               formData.append(key, value[0]);
             }
+          } else if (["latitude", "longitude", "fullAddress"].includes(key)) {
+            // skip, will add from location state
           } else {
             formData.append(key, value);
           }
         });
+        formData.append("latitude", location.latitude);
+        formData.append("longitude", location.longitude);
+        formData.append("fullAddress", location.fullAddress);
 
         const response = await axios.post(
-          "https://3b41727a9f0b.ngrok-free.app/api/auth/authority/register",
+          `${import.meta.env.VITE_API_BASE_URL || ""}/api/auth/authority/register`,
           formData
         );
 
@@ -185,7 +218,7 @@ const Signup = () => {
           toast.success(
             "Registration successful! Your application is under review."
           );
-          sessionStorage.removeItem("signup-form-authority"); // Clear form data on successful submission
+          sessionStorage.removeItem("signup-form-authority");
           sessionStorage.setItem("otp-email", data.email);
           sessionStorage.setItem("otp-role", role);
           reset();
@@ -233,7 +266,7 @@ const Signup = () => {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className={`relative w-full ${
             role === "authority" ? "max-w-lg" : "max-w-md"
-          } bg-white/80 backdrop-blur-lg p-6 rounded-2xl shadow-2xl border border-gray-200/50 transition-all duration-300`}
+          } bg-white/80 backdrop-blur-lg p-10 rounded-2xl shadow-2xl border border-gray-200/50 transition-all duration-300`}
         >
           <div className="text-center mb-2">
             <h1 className="text-3xl font-bold text-blue-900">
@@ -269,13 +302,14 @@ const Signup = () => {
             className="space-y-1.5"
             encType="multipart/form-data"
           >
+
             {/* ========= BASE FIELDS ========= */}
             <div>
-              <Label label="Full Name" required />
+              <Label label={role === "authority" ? "Authority Office Name" : "Full Name"} required />
               <input
                 type="text"
                 {...register("fullName")}
-                placeholder="e.g., Ram Bahadur Thapa"
+                placeholder={role === "authority" ? "e.g., District Electricity Office" : "e.g., Ram Bahadur Thapa"}
                 className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200/50 outline-none text-sm transition"
               />
               {errors.fullName && (
@@ -323,13 +357,64 @@ const Signup = () => {
               )}
             </div>
 
+            {/* ========= LOCATION PICKER FOR CITIZEN ========= */}
+            {role === "citizen" && (
+              <div>
+                <Label label="Location" required />
+                <button
+                  type="button"
+                  className="w-full p-2.5 bg-blue-50 border border-blue-300 rounded-lg text-blue-700 font-semibold hover:bg-blue-100 transition mb-2"
+                  onClick={() => setShowMap(true)}
+                >
+                  {location.latitude && location.longitude
+                    ? `Selected: ${location.fullAddress || `Lat: ${location.latitude}, Lng: ${location.longitude}`}`
+                    : "Choose on map"}
+                </button>
+                {/* Hidden fields for validation */}
+                <input type="hidden" {...register("latitude", { valueAsNumber: true })} value={location.latitude || ""} />
+                <input type="hidden" {...register("longitude", { valueAsNumber: true })} value={location.longitude || ""} />
+                <input type="hidden" {...register("fullAddress") } value={location.fullAddress || ""} />
+                {(errors.latitude || errors.longitude || errors.fullAddress) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.fullAddress?.message || errors.latitude?.message || errors.longitude?.message}
+                  </p>
+                )}
+              </div>
+            )}
+      {/* Map Picker Modal */}
+      {showMap && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto p-6 relative"
+          >
+            <h3 className="text-xl font-bold text-center mb-4">Select Location on Map</h3>
+            <MapPicker
+              onLocationSelect={(loc) => {
+                setLocation(loc);
+                setShowMap(false);
+              }}
+              initialPosition={location.latitude && location.longitude ? [location.latitude, location.longitude] : [27.6193, 83.4750]}
+              autoCloseOnSelect
+            />
+            <button
+              onClick={() => setShowMap(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+            >
+              &times;
+            </button>
+          </motion.div>
+        </div>
+      )}
+
             {/* ========= AUTHORITY FIELDS ========= */}
             {role === "authority" && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 transition={{ duration: 0.4, ease: "easeInOut" }}
-                className="space-y-3 pt-3 border-t border-gray-300/50 overflow-hidden"
+                className="space-y-1 pt-1 pb-0 mt-1 mb-0 border-t border-gray-300/50 overflow-hidden bg-white/90 rounded-xl px-1"
               >
                 <div>
                   <Label label="Authority Type" required />
@@ -339,15 +424,54 @@ const Signup = () => {
                   >
                     <option value="">Select Authority Type</option>
                     <option value="electricity">Electricity</option>
-                    <option value="transport">Transport</option>
-                    <option value="cybersecurity">Cybersecurity</option>
-                    <option value="water">Water</option>
-                    <option value="sanitation">Sanitation</option>
                     <option value="road">Road</option>
+                    <option value="water">Water</option>
+                    <option value="transportation">Transportation</option>
+                    <option value="cyberbureau">Cyber Bureau</option>
+                    <option value="fire">Fire</option>
+                    <option value="police">Police</option>
                   </select>
                   {errors.authorityType && (
                     <p className="text-xs text-red-600 mt-1">
                       {errors.authorityType.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label label="Phone Number" required />
+                  <input
+                    type="text"
+                    {...register("phoneNumber")}
+                    placeholder="e.g., 9800000000"
+                    className="w-full p-2.5 bg-white border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200/50 outline-none text-sm transition"
+                  />
+                  {errors.phoneNumber && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {errors.phoneNumber.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Map Picker for Address/Lat/Lng */}
+                <div>
+                  <Label label="Office Location" required />
+                  <button
+                    type="button"
+                    className="w-full p-2.5 bg-blue-50 border border-blue-300 rounded-lg text-blue-700 font-semibold hover:bg-blue-100 transition mb-2"
+                    onClick={() => setShowMap(true)}
+                  >
+                    {location.latitude && location.longitude
+                      ? `Selected: ${location.fullAddress || `Lat: ${location.latitude}, Lng: ${location.longitude}`}`
+                      : "Choose on map"}
+                  </button>
+                  {/* Hidden fields for validation */}
+                  <input type="hidden" {...register("latitude", { valueAsNumber: true })} value={location.latitude || ""} />
+                  <input type="hidden" {...register("longitude", { valueAsNumber: true })} value={location.longitude || ""} />
+                  <input type="hidden" {...register("fullAddress") } value={location.fullAddress || ""} />
+                  {(errors.latitude || errors.longitude || errors.fullAddress) && (
+                    <p className="text-xs text-red-600 mt-1">
+                      {errors.fullAddress?.message || errors.latitude?.message || errors.longitude?.message}
                     </p>
                   )}
                 </div>

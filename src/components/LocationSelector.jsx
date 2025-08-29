@@ -41,7 +41,12 @@ const LocationSelector = ({ onLocationSelect }) => {
           console.error("Error getting location:", error);
           toast.error("Error getting your location. Please enable location services.");
           setLoading(false);
-        }
+        },
+            { 
+              enableHighAccuracy: true, 
+              timeout: 10000, 
+              maximumAge: 0 
+            }
       );
     } else {
       toast.error("Geolocation is not supported by your browser.");
@@ -64,10 +69,10 @@ const LocationSelector = ({ onLocationSelect }) => {
         <button
           type="button"
           onClick={handleUseMyLocation}
+          className="flex items-center px-4 py-2 bg-blue-700 text-white font-semibold rounded-md shadow-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           disabled={loading}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Fetching...' : 'Use My Location'}
+          {loading ? 'Getting Location...' : 'Use My Location'}
           <FaMapMarkerAlt className="ml-2" />
         </button>
         <button
