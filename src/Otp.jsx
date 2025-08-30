@@ -67,19 +67,27 @@ const Otp = () => {
         const result = await authService.verifyOtp(email, fullOtp);
         
         if (result.success) {
-          toast.success("✅ OTP Verified!");
+          toast.success("✅ OTP Verified! Logging you in...");
           // Clear sessionStorage on successful verification
           sessionStorage.removeItem("otp-email");
           sessionStorage.removeItem("otp-role");
           sessionStorage.removeItem("otp-digits");
 
-          // role अनुसार next step
-          if (role === "citizen") {
-            toast.info("Now login with your email & password.");
-            navigate("/login", { state: { showMessage: true } });
-          } else if (role === "authority") {
-            navigate("/verification-authority");
+          // Auto-login after OTP verification
+          const loginResult = await authService.login({ email, password: sessionStorage.getItem("otp-password") || "" });
+          if (loginResult.success) {
+            const user = loginResult.data.user;
+            if (user.role === "AUTHORITY") {
+              navigate("/authority");
+            } else if (user.role === "ADMIN") {
+              navigate("/admin");
+            } else if (user.role === "USER" || user.role === "citizen") {
+              navigate("/citizen");
+            } else {
+              navigate("/");
+            }
           } else {
+            toast.info("OTP verified. Now login with your email & password.");
             navigate("/login");
           }
         } else {

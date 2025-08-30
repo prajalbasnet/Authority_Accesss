@@ -91,7 +91,6 @@ const Router = createBrowserRouter([
         ),
         children: [
             { index: true, element: <AdminDashboardHome /> },
-            { path: "dashboard", element: <AdminDashboardHome /> },
             { path: "complaints", element: <AllComplaints /> },
             { path: "authorities", element: <AllAuthorities /> },
             { path: "citizens", element: <AllCitizens /> },

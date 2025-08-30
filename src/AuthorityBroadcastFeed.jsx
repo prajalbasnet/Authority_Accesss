@@ -1,28 +1,19 @@
+
 import React, { useEffect, useState } from "react";
 
-// Dummy fetch function, replace with real API call
-const fetchBroadcasts = async () => {
-  // Replace with your API endpoint and logic
-  return [
-    {
-      id: 1,
-      citizenName: "Ayush Aryal",
-      text: "There is a power outage in my area.",
-      date: "2025-08-29T10:00:00Z",
-      authorityReply: "We are working on it.",
-    },
-  ];
-};
+import axios from "axios";
 
 const AuthorityBroadcastFeed = () => {
   const [broadcasts, setBroadcasts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchBroadcasts().then((data) => {
-      setBroadcasts(data);
-      setLoading(false);
-    });
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/authority/broadcasts-dummy`)
+      .then((res) => {
+        setBroadcasts(res.data?.data || []);
+      })
+      .catch(() => setBroadcasts([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (

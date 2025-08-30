@@ -1,30 +1,19 @@
+
 import React, { useEffect, useState } from "react";
 
-// Dummy fetch function, replace with real API call
-const fetchComplaints = async () => {
-  // Replace with your API endpoint and logic
-  return [
-    {
-      id: 1,
-      citizenName: "Ayush Aryal",
-      citizenAddress: "Kathmandu, Nepal",
-      citizenPhone: "9800000000",
-      text: "There is a power outage in my area.",
-      date: "2025-08-29T10:00:00Z",
-      authorityReply: "We are working on it.",
-    },
-  ];
-};
+import axios from "axios";
 
 const AuthorityComplaints = () => {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchComplaints().then((data) => {
-      setComplaints(data);
-      setLoading(false);
-    });
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/authority/complaints-dummy`)
+      .then((res) => {
+        setComplaints(res.data?.data || []);
+      })
+      .catch(() => setComplaints([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (

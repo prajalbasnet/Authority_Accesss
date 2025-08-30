@@ -72,20 +72,49 @@ export const authService = {
 
   // Login
   login: async (credentials) => {
-    const response = await API.post('/api/auth/login', credentials);
-    
-    if (response.data.success) {
-      const { token, user, location } = response.data.data;
+    try {
+      console.log('🚀 Attempting login with:', credentials);
+      console.log('🌐 API Base URL:', import.meta.env.VITE_API_BASE_URL);
       
-      // Store auth data
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      if (location) {
-        localStorage.setItem('location', JSON.stringify(location));
+      const response = await API.post('/api/auth/login', credentials);
+      console.log('✅ Login response:', response.data);
+      
+      if (response.data.success) {
+        const { token, user, location } = response.data.data;
+        
+        // Store auth data
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        if (location) {
+          localStorage.setItem('location', JSON.stringify(location));
+        }
+        console.log('💾 Auth data stored successfully');
       }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Login API Error:', error);
+      console.error('📡 Request details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        baseURL: error.config?.baseURL,
+        timeout: error.config?.timeout
+      });
+      
+      if (error.response) {
+        console.error('🔥 Server Response Error:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data
+        });
+      } else if (error.request) {
+        console.error('📶 Network Error - No response received:', error.request);
+      } else {
+        console.error('⚙️ Request Setup Error:', error.message);
+      }
+      
+      throw error;
     }
-    
-    return response.data;
   },
 
   // Logout

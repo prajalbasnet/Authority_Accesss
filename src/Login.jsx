@@ -39,7 +39,7 @@ const Login = () => {
     if (token && user) {
       toast.info("You are already logged in.");
       if (user.role === "AUTHORITY") {
-        navigate("/authority/dashboard");
+        navigate("/authority");
       } else if (user.role === "ADMIN") {
         navigate("/admin"); // Redirect to admin dashboard home
       } else if (user.role === "USER") {
@@ -61,7 +61,7 @@ const Login = () => {
         toast.success("Login Successful! Redirecting...");
 
         if (user.role === "AUTHORITY") {
-          navigate("/authority/dashboard");
+          navigate("/authority");
         } else if (user.role === "ADMIN") {
           navigate("/admin"); // Redirect to admin dashboard home
         } else if (user.role === "USER") {

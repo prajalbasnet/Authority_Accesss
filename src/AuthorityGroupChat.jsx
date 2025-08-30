@@ -2,7 +2,23 @@
 import React, { useEffect, useState, useRef } from "react";
 
 
-// TODO: Replace with real API call
+
+
+import axios from "axios";
+
+// Fetch and group complaints by topic for group chat (dummy endpoint, real API base URL)
+const fetchGroupComplaints = async () => {
+  const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/authority/group-complaints-dummy`);
+  const complaints = res.data?.data || [];
+  // Group by topic (assuming each complaint has a 'topic' field)
+  const groups = {};
+  complaints.forEach((c) => {
+    const topic = c.topic || "General";
+    if (!groups[topic]) groups[topic] = { topic, complaints: [], groupReplies: [] };
+    groups[topic].complaints.push(c);
+  });
+  return Object.values(groups);
+};
 
 
 const AuthorityGroupChat = () => {
