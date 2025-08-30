@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { FaCamera } from "react-icons/fa";
 import Webcam from "react-webcam";
@@ -14,6 +13,7 @@ import { Loader2 } from "lucide-react";
 
 import backgroundImage from "./assets/nepaliimage2.jpg";
 import MapPicker from "./components/MapPicker";
+import { authService } from "./services/apiService";
 
 // ================== VALIDATION SCHEMAS ==================
 
@@ -63,6 +63,12 @@ const Signup = () => {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const webcamRef = useRef(null);
 
+  const [selectedFiles, setSelectedFiles] = useState({
+    authorityIdCard: null,
+    citizenshipFront: null,
+    citizenshipBack: null,
+  });
+
   const {
     register,
     handleSubmit,
@@ -74,7 +80,7 @@ const Signup = () => {
     resolver: zodResolver(schema),
     mode: "onBlur",
     defaultValues:
-      JSON.parse(sessionStorage.getItem(`signup-form-${role}`)) || {},
+      JSON.parse(localStorage.getItem(`signup-form-${role}`)) || {},
   });
 
   // Redirect if already logged in
@@ -99,17 +105,18 @@ const Signup = () => {
   }, [navigate]);
 
   useEffect(() => {
-    reset();
+    const saved = JSON.parse(localStorage.getItem(`signup-form-${role}`)) || {};
+    reset(saved);
     setUserPhoto(null);
     setLivePhoto(null);
     setIsCameraOpen(false);
     setLocation({ latitude: null, longitude: null, fullAddress: "" });
   }, [role, reset]);
 
-  // Save form data to sessionStorage on change
+  // Save form data to localStorage on change
   useEffect(() => {
     const subscription = watch((value) => {
-      sessionStorage.setItem(`signup-form-${role}`, JSON.stringify(value));
+      localStorage.setItem(`signup-form-${role}`, JSON.stringify(value));
     });
     return () => subscription.unsubscribe();
   }, [watch, role]);
@@ -173,63 +180,78 @@ const Signup = () => {
           latitude: location.latitude,
           longitude: location.longitude,
         };
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL || ""}/api/auth/register`,
-          payload,
-          { headers: { "Content-Type": "application/json" } }
-        );
+        
+        const result = await authService.registerCitizen(payload);
 
-        if (response.status === 200) {
+        if (result.success) {
           toast.success("Registered successfully! Now verify your OTP.");
-          sessionStorage.removeItem("signup-form-citizen");
+          localStorage.removeItem("signup-form-citizen");
           sessionStorage.setItem("otp-email", data.email);
           sessionStorage.setItem("otp-role", role);
           navigate("/otp", { state: { email: data.email, role: "citizen" } });
+        } else {
+          toast.error(result.message || "Registration failed.");
         }
       } else {
         // Use location state for lat/lng/address
         const formData = new FormData();
         Object.entries(data).forEach(([key, value]) => {
-          if ([
-            "profilePhoto",
-            "citizenshipFrontImage",
-            "citizenshipBackImage",
-            "authorityIdentityCardImage",
-          ].includes(key)) {
+          if (key === 'profilePhoto' || key === 'citizenshipFrontImage' || 
+              key === 'citizenshipBackImage' || key === 'authorityIdentityCardImage') {
+            // For file inputs, append the actual file
             if (value?.[0]) {
               formData.append(key, value[0]);
             }
-          } else if (["latitude", "longitude", "fullAddress"].includes(key)) {
-            // skip, will add from location state
           } else {
-            formData.append(key, value);
+            // For text inputs, append the value directly
+            if (value !== undefined && value !== null && value !== '') {
+              formData.append(key, value);
+            }
           }
         });
-        formData.append("latitude", location.latitude);
-        formData.append("longitude", location.longitude);
-        formData.append("fullAddress", location.fullAddress);
+        formData.append("latitude", location.latitude || 0);
+        formData.append("longitude", location.longitude || 0);
+        formData.append("fullAddress", location.fullAddress || "");
 
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL || ""}/api/auth/authority/register`,
-          formData
-        );
+        // Debug: Log FormData contents
+        console.log("FormData contents:");
+        for (let [key, value] of formData.entries()) {
+          console.log(key, ':', value);
+        }
 
-        if (response.status === 200) {
+        // Additional validation check
+        console.log("Location data:", location);
+        console.log("Form data:", data);
+
+        const result = await authService.registerAuthority(formData);
+
+        if (result.success) {
           toast.success(
             "Registration successful! Your application is under review."
           );
-          sessionStorage.removeItem("signup-form-authority");
+          localStorage.removeItem("signup-form-authority");
           sessionStorage.setItem("otp-email", data.email);
           sessionStorage.setItem("otp-role", role);
           reset();
           navigate("/otp", { state: { email: data.email, role: "authority" } });
+        } else {
+          toast.error(result.message || "Registration failed.");
         }
       }
     } catch (error) {
       console.error("Signup error:", error);
-      toast.error(
-        error.response?.data?.message || "Signup failed. Please try again."
-      );
+      console.error("Error response:", error.response?.data);
+      
+      let errorMessage = "Signup failed. Please try again.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -253,20 +275,54 @@ const Signup = () => {
     />
   ));
 
+  const CustomFileInput = ({
+    label,
+    required,
+    fileName,
+    onChange,
+    error,
+    id,
+  }) => (
+    <div>
+      <Label label={label} required={required} />
+      <div className="flex items-center">
+        <label
+          htmlFor={id}
+          className="mr-2 py-1.5 px-4 rounded-lg border-0 text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 flex items-center cursor-pointer"
+        >
+          <FaCamera className="mr-2" />
+          {fileName ? "Change Photo" : "Choose Photo"}
+        </label>
+        <input
+          id={id}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={onChange}
+        />
+        {fileName && (
+          <span className="text-green-600 text-xs ml-2">{fileName}</span>
+        )}
+      </div>
+      {error && (
+        <p className="text-xs text-red-600 mt-1">{error.message}</p>
+      )}
+    </div>
+  );
+
   return (
     <>
       <div
-        className="min-h-screen flex items-center justify-center p-0 bg-cover bg-center font-poppins"
+        className="min-h-screen flex items-center justify-center p-0 bg-filled bg-center  bg-no-repeat font-poppins"
         style={{ backgroundImage: `url(${backgroundImage})` }}
       >
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="fixed inset-0  bg-black/50" />
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className={`relative w-full ${
-            role === "authority" ? "max-w-lg" : "max-w-md"
-          } bg-white/80 backdrop-blur-lg p-10 rounded-2xl shadow-2xl border border-gray-200/50 transition-all duration-300`}
+          className={`relative w-full ${role === "authority" ? "max-w-lg" : "max-w-md"
+            } bg-white/80 backdrop-blur-lg p-10 rounded-2xl shadow-2xl border border-gray-200/50 transition-all duration-300`}
         >
           <div className="text-center mb-2">
             <h1 className="text-3xl font-bold text-blue-900">
@@ -280,17 +336,15 @@ const Signup = () => {
             <div className="flex rounded-lg overflow-hidden border border-gray-300 p-1 bg-gray-100/50">
               <button
                 onClick={() => setRole("citizen")}
-                className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-200 ${
-                  role === "citizen" ? activeTab : inactiveTab
-                }`}
+                className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-200 ${role === "citizen" ? activeTab : inactiveTab
+                  }`}
               >
                 Citizen
               </button>
               <button
                 onClick={() => setRole("authority")}
-                className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${
-                  role === "authority" ? activeTab : inactiveTab
-                }`}
+                className={`px-8 py-2 text-sm font-semibold rounded-md transition-all duration-300 ${role === "authority" ? activeTab : inactiveTab
+                  }`}
               >
                 Authority
               </button>
@@ -373,7 +427,7 @@ const Signup = () => {
                 {/* Hidden fields for validation */}
                 <input type="hidden" {...register("latitude", { valueAsNumber: true })} value={location.latitude || ""} />
                 <input type="hidden" {...register("longitude", { valueAsNumber: true })} value={location.longitude || ""} />
-                <input type="hidden" {...register("fullAddress") } value={location.fullAddress || ""} />
+                <input type="hidden" {...register("fullAddress")} value={location.fullAddress || ""} />
                 {(errors.latitude || errors.longitude || errors.fullAddress) && (
                   <p className="text-xs text-red-600 mt-1">
                     {errors.fullAddress?.message || errors.latitude?.message || errors.longitude?.message}
@@ -381,32 +435,32 @@ const Signup = () => {
                 )}
               </div>
             )}
-      {/* Map Picker Modal */}
-      {showMap && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto p-6 relative"
-          >
-            <h3 className="text-xl font-bold text-center mb-4">Select Location on Map</h3>
-            <MapPicker
-              onLocationSelect={(loc) => {
-                setLocation(loc);
-                setShowMap(false);
-              }}
-              initialPosition={location.latitude && location.longitude ? [location.latitude, location.longitude] : [27.6193, 83.4750]}
-              autoCloseOnSelect
-            />
-            <button
-              onClick={() => setShowMap(false)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
-            >
-              &times;
-            </button>
-          </motion.div>
-        </div>
-      )}
+            {/* Map Picker Modal */}
+            {showMap && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <motion.div
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-auto p-6 relative"
+                >
+                  <h3 className="text-xl font-bold text-center mb-4">Select Location on Map</h3>
+                  <MapPicker
+                    onLocationSelect={(loc) => {
+                      setLocation(loc);
+                      setShowMap(false);
+                    }}
+                    initialPosition={location.latitude && location.longitude ? [location.latitude, location.longitude] : [27.6193, 83.4750]}
+                    autoCloseOnSelect
+                  />
+                  <button
+                    onClick={() => setShowMap(false)}
+                    className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl"
+                  >
+                    &times;
+                  </button>
+                </motion.div>
+              </div>
+            )}
 
             {/* ========= AUTHORITY FIELDS ========= */}
             {role === "authority" && (
@@ -423,13 +477,13 @@ const Signup = () => {
                     className="w-full p-2.5 border border-gray-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200/50 outline-none text-sm transition bg-white"
                   >
                     <option value="">Select Authority Type</option>
-                    <option value="electricity">Electricity</option>
-                    <option value="road">Road</option>
-                    <option value="water">Water</option>
-                    <option value="transportation">Transportation</option>
-                    <option value="cyberbureau">Cyber Bureau</option>
-                    <option value="fire">Fire</option>
-                    <option value="police">Police</option>
+                    <option value="ELECTRICITY">Electricity</option>
+                    <option value="ROAD">Road</option>
+                    <option value="WATER">Water</option>
+                    <option value="TRANSPORTATION">Transportation</option>
+                    <option value="CYBERBUREAU">Cyber Bureau</option>
+                    <option value="FIRE">Fire</option>
+                    <option value="POLICE">Police</option>
                   </select>
                   {errors.authorityType && (
                     <p className="text-xs text-red-600 mt-1">
@@ -468,7 +522,7 @@ const Signup = () => {
                   {/* Hidden fields for validation */}
                   <input type="hidden" {...register("latitude", { valueAsNumber: true })} value={location.latitude || ""} />
                   <input type="hidden" {...register("longitude", { valueAsNumber: true })} value={location.longitude || ""} />
-                  <input type="hidden" {...register("fullAddress") } value={location.fullAddress || ""} />
+                  <input type="hidden" {...register("fullAddress")} value={location.fullAddress || ""} />
                   {(errors.latitude || errors.longitude || errors.fullAddress) && (
                     <p className="text-xs text-red-600 mt-1">
                       {errors.fullAddress?.message || errors.latitude?.message || errors.longitude?.message}
@@ -513,44 +567,56 @@ const Signup = () => {
 
                   {/* Authority ID Card */}
                   <div>
-                    <Label label="Authority ID Card" required />
-                    <FileInput
-                      {...register("authorityIdentityCardImage")}
-                      accept="image/*"
+                    <CustomFileInput
+                      label="Authority ID Card"
+                      required
+                      id="authorityIdCard"
+                      fileName={selectedFiles.authorityIdCard}
+                      onChange={(e) => {
+                        setSelectedFiles((prev) => ({
+                          ...prev,
+                          authorityIdCard: e.target.files[0]?.name || null,
+                        }));
+                        setValue("authorityIdentityCardImage", e.target.files, { shouldValidate: true });
+                      }}
+                      error={errors.authorityIdentityCardImage}
                     />
-                    {errors.authorityIdentityCardImage && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.authorityIdentityCardImage.message}
-                      </p>
-                    )}
                   </div>
 
                   {/* Citizenship (Front) */}
                   <div>
-                    <Label label="Citizenship (Front)" required />
-                    <FileInput
-                      {...register("citizenshipFrontImage")}
-                      accept="image/*"
+                    <CustomFileInput
+                      label="Citizenship (Front)"
+                      required
+                      id="citizenshipFront"
+                      fileName={selectedFiles.citizenshipFront}
+                      onChange={(e) => {
+                        setSelectedFiles((prev) => ({
+                          ...prev,
+                          citizenshipFront: e.target.files[0]?.name || null,
+                        }));
+                        setValue("citizenshipFrontImage", e.target.files, { shouldValidate: true });
+                      }}
+                      error={errors.citizenshipFrontImage}
                     />
-                    {errors.citizenshipFrontImage && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.citizenshipFrontImage.message}
-                      </p>
-                    )}
                   </div>
 
                   {/* Citizenship (Back) */}
                   <div>
-                    <Label label="Citizenship (Back)" required />
-                    <FileInput
-                      {...register("citizenshipBackImage")}
-                      accept="image/*"
+                    <CustomFileInput
+                      label="Citizenship (Back)"
+                      required
+                      id="citizenshipBack"
+                      fileName={selectedFiles.citizenshipBack}
+                      onChange={(e) => {
+                        setSelectedFiles((prev) => ({
+                          ...prev,
+                          citizenshipBack: e.target.files[0]?.name || null,
+                        }));
+                        setValue("citizenshipBackImage", e.target.files, { shouldValidate: true });
+                      }}
+                      error={errors.citizenshipBackImage}
                     />
-                    {errors.citizenshipBackImage && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.citizenshipBackImage.message}
-                      </p>
-                    )}
                   </div>
                 </div>
               </motion.div>
@@ -560,11 +626,10 @@ const Signup = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full font-bold py-3 rounded-lg text-white transition-all duration-300 flex items-center justify-center text-base shadow-lg ${
-                  isSubmitting
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5"
-                }`}
+                className={`w-full font-bold py-3 rounded-lg text-white transition-all duration-300 flex items-center justify-center text-base shadow-lg ${isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-red-600 hover:bg-red-700 hover:shadow-xl hover:-translate-y-0.5"
+                  }`}
               >
                 {isSubmitting ? (
                   <>

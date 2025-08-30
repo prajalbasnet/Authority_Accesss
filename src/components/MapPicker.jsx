@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { toast } from 'react-toastify';
+import { reverseGeocode } from '../services/geocodingService';
 
 // Fix for default marker icon issue with Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -21,20 +22,24 @@ const LocationMarker = ({ onLocationSelect }) => {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
 
-      // Reverse geocoding
+      // Reverse geocoding using service with multiple fallbacks
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-        );
-        const data = await response.json();
-        const fullAddress = data.display_name || 'Address not found';
-        setAddress(fullAddress);
-        onLocationSelect({ latitude: lat, longitude: lng, fullAddress });
-        toast.success("Location selected on map!");
+        const result = await reverseGeocode(lat, lng);
+        setAddress(result.address);
+        onLocationSelect({ latitude: lat, longitude: lng, fullAddress: result.address });
+        
+        if (result.success) {
+          toast.success("Location selected on map!");
+        } else {
+          toast.success("Location selected! (Using coordinates as address)");
+        }
       } catch (error) {
-        console.error("Error fetching address for map click:", error);
-        setAddress('Could not fetch address');
-        toast.error("Could not fetch address for selected point.");
+        console.error("Error in geocoding service:", error);
+        // Ultimate fallback
+        const fallbackAddress = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+        setAddress(fallbackAddress);
+        onLocationSelect({ latitude: lat, longitude: lng, fullAddress: fallbackAddress });
+        toast.success("Location selected! (Using coordinates as address)");
       }
     },
   });
@@ -62,18 +67,22 @@ const MapPicker = ({ onLocationSelect, initialPosition = [27.6193, 83.4750] }) =
         if (map) {
           map.setView([latitude, longitude], 16);
         }
-        // Reverse geocoding
+        // Reverse geocoding using service with multiple fallbacks
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-          const data = await response.json();
-          const fullAddress = data.display_name || 'Address not found';
-          onLocationSelect({ latitude, longitude, fullAddress });
-          toast.success("Location fetched successfully!");
+          const result = await reverseGeocode(latitude, longitude);
+          onLocationSelect({ latitude, longitude, fullAddress: result.address });
+          
+          if (result.success) {
+            toast.success("Location fetched successfully!");
+          } else {
+            toast.success("Location fetched! (Using coordinates as address)");
+          }
         } catch (error) {
-          console.error("Error fetching address:", error);
-          toast.error("Could not fetch address.");
+          console.error("Error in geocoding service:", error);
+          // Ultimate fallback
+          const fallbackAddress = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+          onLocationSelect({ latitude, longitude, fullAddress: fallbackAddress });
+          toast.success("Location fetched! (Using coordinates as address)");
         }
         setLoading(false);
       },

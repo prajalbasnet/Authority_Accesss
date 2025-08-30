@@ -55,7 +55,19 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-0 sm:px-0 lg:px-0">
         <div className="flex justify-between items-center py-0">
           {/* Logo Only */}
-          <Link to="/" className="flex items-center">
+          <Link
+            to="/"
+            className="flex items-center"
+            onClick={e => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (window.location.pathname === '/') {
+                window.location.reload();
+              } else {
+                window.location.href = '/';
+              }
+            }}
+          >
             <img
               src="/src/assets/HamroGunaso.png"
               alt="HamroGunaso Logo"

@@ -43,7 +43,7 @@ export default function About() {
             <img
               src={MissionImg}
               alt="Nepal Flag"
-              className="w-4/5 h-4/5 object-contain animate-flag-wave"
+              className="w-4/5 h-4/5 mt-25 object-contain animate-flag-wave"
             />
           </div>
         </div>
@@ -53,13 +53,16 @@ export default function About() {
           <h1 className="text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-lg text-center md:text-left">
             <span className="text-red-600">Empowering</span> Citizens
             <br />
-            <span className="text-red-600">Strong</span> Governance !
+            <span className="text-red-600">Inclusive</span> Governance
           </h1>
 
           <p className="text-lg md:text-xl text-gray-800 leading-relaxed mt-4 text-center md:text-left">
-            - "
-            <span className="bg-gradient-to-r from-blue-600 to-red-600  bg-clip-text text-transparent font-bold">
-              HamroGunaso
+             "
+            <span className="text-blue-700 font-bold">
+              Hamro
+            </span>
+              <span className="text-red-600 font-bold">
+              Gunaso
             </span>{" "}
             is Nepal's pioneering e-governance platform, designed to bridge the
             gap between citizens and authorities. File complaints, track

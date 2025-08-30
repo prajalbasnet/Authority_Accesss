@@ -4,6 +4,7 @@ import {
   FaTint,
   FaRoad,
   FaShieldAlt,
+  FaHospital,
   FaFire,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,19 +22,30 @@ const authorities = [
     resolved: 1420,
   },
   {
-    name: "Road Transportation",
+    name: "Road Authority",
     icon: <FaRoad size={40} className="text-gray-700" />,
-    description: "Oversees road infrastructure and transportation services.",
+    description: "Oversees road infrastructure and maintenance.",
     responseTime: "1-3 days",
     location: "All major roads",
     phone: "01-4211682",
-    email: "info@roadtransport.gov.np",
+    email: "info@road.gov.np",
     total: 2340,
     resolved: 1980,
   },
   {
+    name: "Transportation Authority",
+    icon: <FaRoad size={40} className="text-green-700" />,
+    description: "Regulates and manages transportation services across Nepal.",
+    responseTime: "1-2 days",
+    location: "Nationwide (Transportation)",
+    phone: "01-5551234",
+    email: "info@transportation.gov.np",
+    total: 1200,
+    resolved: 1100,
+  },
+  {
     name: "Cyber Bureau",
-  icon: <FaShieldAlt size={40} className="text-indigo-600" />,
+    icon: <FaShieldAlt size={40} className="text-indigo-600" />,
     description: "Handles cybercrime, digital security, and online fraud.",
     responseTime: "Immediate to 24 hours",
     location: "National",
@@ -45,7 +57,7 @@ const authorities = [
   {
     name: "Water Supply",
     icon: <FaTint size={40} className="text-blue-400" />,
-  description: "Ensures clean water supply.",
+    description: "Ensures clean water supply.",
     responseTime: "4-8 hours",
     location: "Urban & Rural",
     phone: "01-4211594",
@@ -75,51 +87,85 @@ const authorities = [
     total: 230,
     resolved: 230,
   },
+  {
+    name: "Waste Management Department",
+    icon: <FaTint size={40} className="text-green-500" />,
+    description: "Handles waste collection, disposal, and recycling services.",
+    responseTime: "24 hours",
+    location: "Urban & Municipal Areas",
+    phone: "01-5556789",
+    email: "info@waste.gov.np",
+    total: 540,
+    resolved: 500,
+  },
+  {
+    name: "Health Department",
+    icon: <FaHospital size={40} className="text-red-500" />,
+    description:
+      "Provides healthcare services, emergency response, vaccination, and public health awareness.",
+    responseTime: "12 hours",
+    location: "Hospitals & Health Centers",
+    phone: "01-5567890",
+    email: "health@nepal.gov.np",
+    total: 780,
+    resolved: 730,
+  },
 ];
 
 const Authorities = () => {
   return (
-    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4 md:px-8 font-sans">
+    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 md:px-8 font-sans">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="text-center mb-12"
+        className="text-center mb-10 md:mb-16"
       >
-        <h2 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-4 leading-tight">
+        <h2 className="text-3xl md:text-5xl font-extrabold text-blue-900 mb-4 leading-tight">
           Key Government Authorities
         </h2>
-        <p className="text-gray-700 text-lg md:text-xl max-w-3xl mx-auto">
+        <p className="text-gray-700 text-base md:text-lg lg:text-xl max-w-3xl mx-auto px-2">
           Connect directly with the relevant authorities to address your concerns and ensure swift resolution.
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      {/* ✅ Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
         <AnimatePresence>
           {authorities.map((auth, idx) => {
-            const successRate = auth.total > 0 ? Math.round((auth.resolved / auth.total) * 100) : 0;
+            const successRate =
+              auth.total > 0
+                ? Math.round((auth.resolved / auth.total) * 100)
+                : 0;
             return (
               <motion.div
-                key={auth.name} // Use name as key for better stability
+                key={auth.name}
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                transition={{ duration: 0.6, delay: idx * 0.15, ease: "easeOut" }}
-                whileHover={{ scale: 1.02, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
-                className="bg-white p-6 rounded-2xl shadow-xl border border-blue-100 flex flex-col h-full transform transition-all duration-300 ease-in-out hover:border-red-600"
+                transition={{
+                  duration: 0.6,
+                  delay: idx * 0.15,
+                  ease: "easeOut",
+                }}
+                whileHover={{
+                  scale: 1.02,
+                  boxShadow: "0 10px 20px rgba(0,0,0,0.1)",
+                }}
+                className="bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-blue-100 flex flex-col h-full transition-all duration-300 ease-in-out hover:border-red-600"
               >
                 <div className="flex items-center gap-4 mb-5">
                   <div className="p-3 bg-blue-50 rounded-full flex items-center justify-center shadow-sm">
                     {auth.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-lg md:text-xl font-bold text-gray-900">
                     {auth.name}
                   </h3>
-                  <span className="ml-auto text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                  <span className="ml-auto text-[10px] md:text-xs px-2 md:px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
                     Verified
                   </span>
                 </div>
-                <p className="text-gray-600 text-base mb-4 flex-grow">
+                <p className="text-gray-600 text-sm md:text-base mb-4 flex-grow">
                   {auth.description}
                 </p>
                 <ul className="text-gray-700 text-sm space-y-2 mb-5">
@@ -141,8 +187,9 @@ const Authorities = () => {
                   </li>
                 </ul>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800 mb-2">
-                    <span className="text-blue-600">{auth.resolved}</span> Resolved out of{" "}
+                  <p className="text-xs md:text-sm font-semibold text-gray-800 mb-2">
+                    <span className="text-blue-600">{auth.resolved}</span>{" "}
+                    Resolved out of{" "}
                     <span className="text-gray-600">{auth.total}</span> Total
                   </p>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -151,7 +198,7 @@ const Authorities = () => {
                       style={{ width: `${successRate}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 mt-2">
+                  <p className="text-xs md:text-sm font-semibold text-gray-800 mt-2">
                     Success Rate:{" "}
                     <span className="text-green-600">{successRate}%</span>
                   </p>

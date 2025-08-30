@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,6 +10,7 @@ import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import backgroundImage from "./assets/nepaliimage2.jpg";
 import nepalFlag from "./assets/HamroGunaso.png";
+import { authService } from "./services/apiService";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -53,22 +53,11 @@ const Login = () => {
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const API = import.meta.env.VITE_API_BASE_URL || "";
-      const response = await axios.post(
-        `${API}/api/auth/login`,
-        data
-      );
+      const result = await authService.login(data);
 
-      if (response.data.success) {
-        const { token, user, location } = response.data.data;
-
-        // Store token, user, and location in localStorage
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        if (location) {
-          localStorage.setItem("location", JSON.stringify(location));
-        }
-
+      if (result.success) {
+        const { user } = result.data;
+        
         toast.success("Login Successful! Redirecting...");
 
         if (user.role === "AUTHORITY") {
@@ -81,7 +70,7 @@ const Login = () => {
           navigate("/"); // Default or error page
         }
       } else {
-        toast.error(response.data.message);
+        toast.error(result.message);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -101,7 +90,7 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center font-poppins"
+      className="min-h-screen flex items-center justify-center p-4 bg-filled bg-center font-poppins"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="absolute inset-0 bg-black/60" />

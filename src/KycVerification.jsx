@@ -135,7 +135,7 @@ const KycVerification = () => {
   return (
     <>
       <div className="min-h-screen bg-gray-100 font-poppins">
-        <CitizenNavbar />
+       
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover theme="colored" />
 
         <div className="container mx-auto p-6">

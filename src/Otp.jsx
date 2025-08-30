@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { authService } from "./services/apiService";
 
 const Otp = () => {
   const location = useLocation();
@@ -63,18 +64,9 @@ const Otp = () => {
     const fullOtp = otp.join("");
     if (fullOtp.length === 6) {
       try {
-        const API = import.meta.env.VITE_API_BASE_URL || "";
-        const response = await fetch(
-          `${API}/api/otp/verify/VERIFY_EMAIL`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, otp: fullOtp }),
-          }
-        );
-
-        const result = await response.json();
-        if (response.ok && result.success) {
+        const result = await authService.verifyOtp(email, fullOtp);
+        
+        if (result.success) {
           toast.success("✅ OTP Verified!");
           // Clear sessionStorage on successful verification
           sessionStorage.removeItem("otp-email");
@@ -95,7 +87,7 @@ const Otp = () => {
         }
       } catch (error) {
         console.error("OTP verification error:", error);
-        toast.error("⚠️ OTP Error. Try again later.");
+        toast.error(error.response?.data?.message || "⚠️ OTP Error. Try again later.");
       }
     } else {
       toast.warning("⚠️ Please enter full 6-digit OTP.");

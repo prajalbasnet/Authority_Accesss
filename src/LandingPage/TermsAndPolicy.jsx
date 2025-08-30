@@ -127,11 +127,11 @@ export default function TermsPolicyLegal() {
           <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">
             {lang === "np" ? (
               <>
-                <span className="text-red-600">HamroGunaso</span> नियम तथा नीति
+                <span className="text-blue-700">Hamro</span><span className="text-red-600">Gunaso</span>  नियम तथा नीति
               </>
             ) : (
               <>
-                <span className="text-red-600">HamroGunaso</span> Terms & Policy
+                <span className="text-blue-700">Hamro</span><span className="text-red-600">Gunaso</span>  Terms & Policy
               </>
             )}
           </h1>

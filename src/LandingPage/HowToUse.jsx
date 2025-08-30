@@ -45,8 +45,8 @@ export default function HowToUse() {
     <section className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-16 px-6 font-poppins">
       {/* Header */}
       <div className="max-w-4xl mx-auto text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold text-blue-800 mb-4 drop-shadow-lg">
-          <span className="text-red-600">HamroGunaso</span> कसरी प्रयोग गर्ने?
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4 drop-shadow-lg">
+          <span className="text-blue-700">Hamro</span><span className="text-red-600">Gunaso</span> कसरी प्रयोग गर्ने?
         </h1>
 
         <p className="text-lg md:text-xl text-gray-900">
@@ -69,7 +69,7 @@ export default function HowToUse() {
               >
                 {/* Icon Circle */}
                 <div
-                  className={`absolute top-0 md:top-2 w-16 h-16 flex items-center justify-center rounded-full shadow-lg bg-gradient-to-r from-red-500 via-blue-600 to-blue-300 text-white text-3xl transition-transform duration-300 hover:scale-110`}
+                  className={`absolute top-0 md:top-2 w-11 ml-2 h-11 flex items-center justify-center rounded-full shadow-lg bg-gradient-to-r from-red-500 via-blue-600 to-blue-300 text-white text-3xl transition-transform duration-300 hover:scale-110`}
                   style={{
                     left: isLeft ? "calc(50% - 2rem)" : "calc(50% - 2rem)",
                     zIndex: 10,
@@ -80,11 +80,10 @@ export default function HowToUse() {
 
                 {/* Card */}
                 <div
-                  className={`md:w-5/12 bg-white p-8 rounded-3xl shadow-2xl border-t-4 border-blue-600 transition-transform duration-300 hover:-translate-y-2 hover:shadow-3xl ${
-                    isLeft
-                      ? "md:mr-auto md:text-right"
-                      : "md:ml-auto md:text-left"
-                  }`}
+                  className={`md:w-5/12 bg-white p-8 rounded-3xl shadow-2xl border-t-4 border-blue-600 transition-transform duration-300 hover:-translate-y-2 hover:shadow-3xl ${isLeft
+                    ? "md:mr-auto md:text-right"
+                    : "md:ml-auto md:text-left"
+                    }`}
                 >
                   <h2 className="text-2xl font-bold text-blue-800 mb-3">
                     {step.title}

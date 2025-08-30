@@ -297,11 +297,7 @@ export default function HeroSection() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, delay: 0.4 }}
       >
-        <img
-          src={Gunaso}
-          alt="Gunaso"
-          className="w-3/4 h-full object-contain ml-auto"
-        />
+   
         <div className="relative">
           <motion.img
             src={NepalMap}

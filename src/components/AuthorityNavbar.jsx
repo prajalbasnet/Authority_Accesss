@@ -24,7 +24,20 @@ const AuthorityNavbar = () => {
   return (
     <nav className="bg-blue-900 text-white px-6 py-3 flex items-center justify-between shadow-md">
       <div className="flex items-center gap-3">
-        <Link to="/authority/dashboard" className="text-xl md:text-2xl font-extrabold tracking-wide drop-shadow-lg uppercase text-blue-50" style={{letterSpacing:'0.08em'}}>
+        <Link
+          to="/authority/dashboard"
+          className="text-xl md:text-2xl font-extrabold tracking-wide drop-shadow-lg uppercase text-blue-50"
+          style={{letterSpacing:'0.08em'}}
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (window.location.pathname === '/authority/dashboard') {
+              window.location.reload();
+            } else {
+              window.location.href = '/authority/dashboard';
+            }
+          }}
+        >
           Authority Portal
         </Link>
         {/* Optionally, show authority type or name here */}

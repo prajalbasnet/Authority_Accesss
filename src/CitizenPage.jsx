@@ -329,7 +329,9 @@ const CitizenPage = () => {
                   <h2 className="text-3xl font-bold text-blue-700 mb-4">
                     Step 1: Record Complaint & Select Location
                   </h2>
-
+                  <div className="mb-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded">
+                    Please one complain at a time for convenience.
+                  </div>
                   {/* Voice Recording Section */}
                   <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm">
                     <p className="text-lg font-semibold text-gray-800 mb-4">
