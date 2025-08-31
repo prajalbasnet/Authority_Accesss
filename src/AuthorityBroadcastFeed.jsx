@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const AuthorityBroadcastFeed = () => {
-  const [broadcasts, setBroadcasts] = useState([]);
+  // Moved to features/authority/pages/AuthorityBroadcastFeed.jsx
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

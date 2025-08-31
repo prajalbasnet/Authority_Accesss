@@ -113,3 +113,4 @@ export default function About() {
     </section>
   );
 }
+// Moved to features/landing/pages/About.jsx

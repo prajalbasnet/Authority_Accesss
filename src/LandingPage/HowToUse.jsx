@@ -1,3 +1,6 @@
+// Moved to features/landing/pages/HowToUse.jsx
+
+// This file has been relocated. Please refer to the new location for the updated code.
 import React from "react";
 import {
   FaUserCheck,

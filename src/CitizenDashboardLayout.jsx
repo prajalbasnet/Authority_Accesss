@@ -17,4 +17,5 @@ const CitizenDashboardLayout = () => {
     );
 };
 
+// Moved to features/citizen/pages/CitizenDashboardLayout.jsx
 export default CitizenDashboardLayout;

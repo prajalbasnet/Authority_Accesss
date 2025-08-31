@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Webcam from "react-webcam";
 import { FaCamera } from "react-icons/fa";
-// ...existing code...
+// Moved to features/citizen/pages/CitizenPage.jsx
 import CitizenNavbar from "./components/CitizenNavbar";
 import LocationSelector from "./components/LocationSelector";
 import {
